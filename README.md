@@ -3,7 +3,7 @@
 [![auxmic build](https://github.com/osmanovv/auxmic/workflows/auxmic%20build/badge.svg)](https://github.com/osmanovv/auxmic/actions)
 [![GitHub license](https://img.shields.io/github/license/osmanovv/auxmic)](https://github.com/osmanovv/auxmic/blob/master/LICENSE)
 
-`auxmic` is an open-source audio synchronization software.
+`auxmic` is an open source audio synchronization software.
 
 ![how it works: matching files](http://auxmic.com/sites/default/files/pictures/sync.png)
 
