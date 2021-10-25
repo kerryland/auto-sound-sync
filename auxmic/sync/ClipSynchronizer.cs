@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using System.Linq;
 using System.IO;
+using auxmic.sync;
 
 namespace auxmic
 {
     public sealed class ClipSynchronizer
     {
-        private SyncParams _syncParams;
-
         public Clip Master { get; set; }
 
         public ObservableCollection<Clip> MasterClips { get; set; }
@@ -19,16 +17,14 @@ namespace auxmic
         private Task _processMasterTask;
 
         private TaskScheduler _taskScheduler = TaskScheduler.Current;
-
-        public ClipSynchronizer(SyncParams syncParams)
+        
+        public ClipSynchronizer()
         {
-            _syncParams = syncParams;
-
             this.MasterClips = new ObservableCollection<Clip>();
             this.LQClips = new ObservableCollection<Clip>();
         }
 
-        public void SetMaster(string masterFilename)
+        public void SetMaster(string masterFilename, IFingerprinter fingerprinter)
         {
             if (Path.GetDirectoryName(masterFilename) == GetTempPath())
             {
@@ -42,7 +38,7 @@ namespace auxmic
                 this.MasterClips.Clear();
             }
 
-            this.Master = new Clip(masterFilename, _syncParams);
+            this.Master = new Clip(masterFilename, fingerprinter);
 
             // disable export button for high quality audio source
             this.Master.DisplayExportControls = false;
@@ -116,10 +112,11 @@ namespace auxmic
             // ждём загрузки мастер-записи, т.к. для ресемплинга нам нужно знать его WaveFormat
             _loadMasterTask.Wait();
 
-            Clip clip = new Clip(LQfilename, this._syncParams, this.Master.WaveFormat);
-
-            // enable export button for clip
-            clip.DisplayExportControls = true;
+            Clip clip = new Clip(LQfilename, this.Master.Fingerprinter, this.Master.WaveFormat)
+            {
+                // enable export button for clip
+                DisplayExportControls = true
+            };
 
             this.LQClips.Add(clip);
 
@@ -203,12 +200,19 @@ namespace auxmic
 
         /// <summary>
         /// Сохранение синхронизированного файла.
+        /// Extract a subset of the master file to create a new audio file for "clip" named "filename".
         /// </summary>
         /// <param name="clip"></param>
         /// <param name="filename"></param>
         public void Save(Clip clip, string filename)
         {
-            this.Master.SaveMatch(filename, clip.StartIndex, clip.DataLength);
+            if (clip.MatchResult == null)
+            {
+                throw new ApplicationException("Could not find a match");
+            }
+
+            this.Master.SoundFile.SaveMatch(filename, clip.MatchResult.QueryMatchStartsAt, 
+                clip.MatchResult.TrackMatchStartsAt, clip.SoundFile.Length);
         }
 
         /// <summary>

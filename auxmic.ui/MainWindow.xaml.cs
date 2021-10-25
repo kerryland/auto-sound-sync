@@ -6,6 +6,7 @@ using System.Windows.Data;
 using System.ComponentModel;
 using System;
 using System.Windows.Controls.Primitives;
+using auxmic.sync;
 
 namespace auxmic.ui
 {
@@ -14,13 +15,6 @@ namespace auxmic.ui
     /// </summary>
     public partial class MainWindow : Window
     {
-        private SyncParams _syncParams = new SyncParams
-        {
-            L = 256,
-            FreqRangeStep = 60,
-            WindowFunction = WindowFunctions.Hamming
-        };
-
         public ClipSynchronizer _clipSynchronizer;
 
         public MainWindow()
@@ -44,12 +38,29 @@ namespace auxmic.ui
 
             try
             {
-                _clipSynchronizer.SetMaster(files[0]);
+                var fingerprinter = chooseFingerprinter();
+                _clipSynchronizer.SetMaster(files[0], fingerprinter);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK);
             }
+        }
+
+        private static IFingerprinter chooseFingerprinter()
+        {
+            IFingerprinter fingerprinter;
+
+            if ("AuxMic" == Properties.Settings.Default.SYNCHRONIZER)
+            {
+                fingerprinter = new AuxMicFingerprinter();
+            }
+            else
+            {
+                fingerprinter = new SoundFingerprinter();
+            }
+
+            return fingerprinter;
         }
 
         private void LQItems_Drop(object sender, DragEventArgs e)
@@ -81,7 +92,7 @@ namespace auxmic.ui
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            _clipSynchronizer = new ClipSynchronizer(_syncParams);
+            _clipSynchronizer = new ClipSynchronizer();
 
             // Очищаем списки, т.к. для отображения разметки в конструкторе форм добавлена строка
             HQItems.Items.Clear();
@@ -181,9 +192,16 @@ namespace auxmic.ui
 
             if (saveFileDialog.ShowDialog() == true)
             {
+                var duration = (clip.Length() / clip.WaveFormat.AverageBytesPerSecond) - clip.MatchResult.QueryMatchStartsAt;
+                
                 // export media
                 FFmpegTool ffmpeg = new FFmpegTool(ffmpegExePath);
-                ffmpeg.Export(clip.Filename, _clipSynchronizer.Master.Filename, clip.Offset, saveFileDialog.FileName);
+                ffmpeg.Export(
+                    clip.Filename, 
+                    _clipSynchronizer.Master.Filename,
+                    clip.Offset,
+                    saveFileDialog.FileName,
+                    duration);
             }
 
             //MessageBox.Show("Synced video exported.", "File exported", MessageBoxButton.OK);

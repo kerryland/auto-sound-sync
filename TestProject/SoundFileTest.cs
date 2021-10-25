@@ -71,7 +71,7 @@ namespace TestProject
         [TestMethod()]
         public void WaveData_dtmf_1to0_Test()
         {
-            string filename = @"..\..\..\TestProject\Data\dtmf_1to0.wav";
+            string filename = "dtmf_1to0.wav";
 
             Int32[] actual;
             Int32[] expected;
@@ -80,33 +80,86 @@ namespace TestProject
 
             CollectionAssert.AreEqual(expected, actual);
         }
-
-        private static void ReadFile(string filename, out Int32[] actual, out Int32[] expected, Int32[] fileData)
+        
+        private static string Filename(string filename)
         {
+            // Figure out where the test data is (tests didn't run reliably in JetBrains Rider)
+            string knownPath = @"\TestProject\";
+            int knownPart = Environment.CurrentDirectory.IndexOf(knownPath);
+            String dataFolder = Environment.CurrentDirectory.Remove(knownPart + knownPath.Length) + @"Data\";
+            return dataFolder + filename;
+        }
+
+
+        private static void ReadFile(string testData, out Int32[] actual, out Int32[] expected, Int32[] fileData)
+        {
+            string filename = Filename(testData);
+
             WaveFormat resampleFormat = null;
+            
+            // This constructor also create a wave file
             SoundFile soundFile = new SoundFile(filename, resampleFormat);
-
-            List<Int32> leftChannel = new List<Int32>();
-
-            int L = 256; //_syncParams.L;
-            Int32[] data; // SoundFile.WaveData.LeftChannel;
-            int N = soundFile.DataLength;
-
-            for (int i = 0; i <= N - L; i += L)
+            
+            // Now read the new wave file and see if it contains what we expect it to
+            using (var waveFileReader = new WaveFileReader(soundFile.TempFilename)) 
             {
-                data = soundFile.Read(L);
-                leftChannel.AddRange(data);
+                List<Int32> leftChannel = new List<Int32>();
+
+                int L = 256; //_syncParams.L;
+                long N = waveFileReader.SampleCount;
+
+                for (int i = 0; i <= N - L; i += L)  // sb i <= N - L
+                {
+                    Int32[] data = ReadFile(waveFileReader, L);
+                    leftChannel.AddRange(data);
+                }
+
+                actual = leftChannel.ToArray();
+
+                expected = fileData.Take(fileData.Length - fileData.Length % L).ToArray();
+            }
+        }
+
+        private static int[] ReadFile(WaveFileReader waveFileReader, int samplesToRead)
+        {
+            Int32[] result = new Int32[samplesToRead];
+
+            int blockAlign = waveFileReader.BlockAlign;
+
+            byte[] buffer = new byte[blockAlign * samplesToRead];
+
+            int bytesRead = waveFileReader.Read(buffer, 0, blockAlign * samplesToRead);
+
+            for (int sample = 0; sample < bytesRead / blockAlign; sample++)
+            {
+                switch (waveFileReader.WaveFormat.BitsPerSample)
+                {
+                    case 8:
+                        result[sample] = (Int16) buffer[sample * blockAlign];
+                        break;
+
+                    case 16:
+                        result[sample] = BitConverter.ToInt16(buffer, sample * blockAlign);
+                        break;
+
+                    case 32:
+                        result[sample] = BitConverter.ToInt32(buffer, sample * blockAlign);
+                        break;
+
+                    default:
+                        throw new NotSupportedException(String.Format(
+                            "BitDepth '{0}' not supported. Try 8, 16 or 32-bit audio instead.",
+                            waveFileReader.WaveFormat.BitsPerSample));
+                }
             }
 
-            actual = leftChannel.ToArray();
-
-            expected = fileData.Take(fileData.Length - fileData.Length % L).ToArray();
+            return result;
         }
 
         [TestMethod()]
         public void WaveData_DSC_6785_48kHz_16bit_mono_Test()
         {
-            string filename = @"..\..\..\TestProject\Data\DSC_6785_48kHz_16bit_mono.wav";
+            string filename = "DSC_6785_48kHz_16bit_mono.wav";
 
             Int32[] actual;
             Int32[] expected;
@@ -119,7 +172,7 @@ namespace TestProject
         [TestMethod()]
         public void WaveData_master_48kHz_16bit_stereo_Test()
         {
-            string filename = @"..\..\..\TestProject\Data\master_48kHz_16bit_stereo.wav";
+            string filename = "master_48kHz_16bit_stereo.wav";
 
             Int32[] actual;
             Int32[] expected;

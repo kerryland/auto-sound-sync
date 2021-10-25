@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Diagnostics;
 
 namespace auxmic.ui
 {
@@ -29,7 +30,13 @@ namespace auxmic.ui
         /// <param name="audioFilePath">Audio file path</param>
         /// <param name="offset">Audio offset</param>
         /// <param name="targetFilePath">Target synced file path</param>
-        internal void Export(string videoFilePath, string audioFilePath, TimeSpan offset, string targetFilePath)
+        /// <param name="duration"></param>
+        internal async void Export(
+            string videoFilePath,
+            string audioFilePath,
+            TimeSpan offset,
+            string targetFilePath,
+            double duration)
         {
             if (!File.Exists(this.FFmpegExe))
             {
@@ -37,13 +44,15 @@ namespace auxmic.ui
             }
 
             string offsetInvariantCulture = offset.ToString("g", System.Globalization.CultureInfo.InvariantCulture);
+            string durationInvariantCulture = duration.ToString("g", System.Globalization.CultureInfo.InvariantCulture);
 
             // command template to export shortest synced video
             // check https://ffmpeg.org/ffmpeg.html for params:
             // -ss position(input / output)
-            string exportArgs = $"-i \"{videoFilePath}\" -ss {offsetInvariantCulture} -i \"{audioFilePath}\" -c copy -map 0:v:0 -map 1:a:0 -shortest \"{targetFilePath}\"";
+            string exportArgs = $"-y -ss {offsetInvariantCulture} -i \"{videoFilePath}\" -i \"{audioFilePath}\" -c copy -map 0:v:0 -map 1:a:0 -t {durationInvariantCulture} \"{targetFilePath}\"";
 
-            System.Diagnostics.Process.Start($"\"{FFmpegExe}\"", exportArgs);
-        }
+            Process process = Process.Start($"\"{FFmpegExe}\"", exportArgs);
+            //  process.BeginErrorReadLine();
+         }
     }
 }

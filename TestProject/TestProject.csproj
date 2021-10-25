@@ -31,6 +31,7 @@
     <Content Include="Data\dtmf_1to0.wav" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NAudio" Version="1.10.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
+    <PackageReference Include="NAudio" Version="2.0.1" />
   </ItemGroup>
 </Project>

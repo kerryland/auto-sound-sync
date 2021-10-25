@@ -1,13 +1,11 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
-using auxmic.fft;
-using NAudio.Wave;
-using System.Linq;
+using auxmic.sync;
+
+using WaveFormat = NAudio.Wave.WaveFormat;
 
 namespace auxmic
 {
@@ -16,14 +14,11 @@ namespace auxmic
         // HRESULT: 0xC00D36C4 (-1072875836)
         private const int MF_MEDIA_ENGINE_ERR_SRC_NOT_SUPPORTED = -1072875836;
 
-        // HRESULT: 0x20 (-2147024864)
-        private const int ERROR_SHARING_VIOLATION = -2147024864;
-
         #region PROPERTIES & FIELDS
-        /// <summary>
-        /// Параметры синхронизации клипа
-        /// </summary>
-        internal SyncParams _syncParams;
+
+        private readonly IFingerprinter _fingerprinter;
+
+        public IFingerprinter Fingerprinter => _fingerprinter;
 
         /// <summary>
         /// Формат мастер-записи к которому надо ресемплировать остальные файлы для дальнейшей работы с ними.
@@ -74,12 +69,23 @@ namespace auxmic
             }
         }
 
+        public long Length()
+        {
+            return SoundFile.Length;
+        }
+
         private int _maxProgressValue;
         /// <summary>
         /// Максимальное значения прогресса.
         /// ВНИМАНИЕ: на разных этапах обработки файла это значение меняется.
         /// Сначала отображает максимальное значение прогресса при расчёте хэшей,
         /// затем отображает значение для синхронизации.
+        ///
+        /// Maximum progress values.
+        /// ATTENTION: this value changes at different stages of file processing.
+        /// First displays the maximum progress value when calculating hashes,
+        /// then displays the value for synchronization.
+        ///
         /// </summary>
         public int MaxProgressValue
         {
@@ -128,6 +134,12 @@ namespace auxmic
         /// другого цвета отслеживалось свойство IsHashed, но тогда после хэширования 
         /// прогресс показывал 100% и менял цвет, в то время как требовалось менять цвет
         /// только с началом синхронизации.
+        ///
+        /// Synchronization in progress?
+        /// This property was required to display the sync progress in a different color on the same ProgressBar.
+        /// Initially, to select a different color, the IsHashed property was monitored, but then after hashing
+        /// the progress showed 100% and changed color, while it was required to change the color only with the
+        /// start of synchronization.
         /// </summary>
         public bool IsMatching
         {
@@ -167,11 +179,11 @@ namespace auxmic
             }
         }
 
-        private Int32[] _hashes;
+        private Object _hashes;
         /// <summary>
         /// Хэши для файла
         /// </summary>
-        internal Int32[] Hashes
+        internal Object Hashes
         {
             get
             {
@@ -196,6 +208,8 @@ namespace auxmic
 
         /// <summary>
         /// Количество сэмплов данных
+        ///
+        /// Number of data samples
         /// </summary>
         internal int DataLength
         {
@@ -205,14 +219,16 @@ namespace auxmic
             }
         }
 
-        /// <summary>
-        /// Позиция с которой начинается LQ-файл в мастере.
-        /// Значение можно вычислить зная this.Offset как
-        /// clip.Offset.TotalSeconds * clip.WaveFormat.SampleRate,
-        /// но вычисленное значение будет немного отличаться от изначально рассчитанного.
-        /// Разница мала, и можно ею пренебречь, но решил хранить изначально рассчитанное значение.
-        /// </summary>
-        internal int StartIndex { get; set; }
+        private ClipMatch _matchResult;
+
+        public ClipMatch MatchResult
+        {
+            get
+            {
+                return _matchResult;
+            }
+        }
+    
 
         private TimeSpan _offset;
 
@@ -323,14 +339,14 @@ namespace auxmic
         /// Constructor.
         /// </summary>
         /// <param name="filename">Filename to load</param>
-        /// <param name="syncParams">SyncParams</param>
+        /// <param name="fingerprinter"></param>
         /// <param name="resampleFormat">Resample format. If not set (null) - will not resample.</param>
-        internal Clip(string filename, SyncParams syncParams, WaveFormat resampleFormat = null)
+        internal Clip(string filename, IFingerprinter fingerprinter, WaveFormat resampleFormat = null)
         {
             this.Filename = filename;
-            this._syncParams = syncParams;
+            _fingerprinter = fingerprinter;
             this._resampleFormat = resampleFormat;
-            SetProgressMax();
+            SetProgressMax(); // TODO: Remove?
         }
 
         /// <summary>
@@ -339,6 +355,8 @@ namespace auxmic
         /// Если формат файла не поддерживается Media Foundation выдаст исключение 
         /// COMException MF_MEDIA_ENGINE_ERR_SRC_NOT_SUPPORTED,
         /// которое перехватывается и оборачивается в NotSupportedException.
+        ///
+        /// Extract audio from file and save as a .WAV into the temp folder
         /// </summary>
         internal void LoadFile()
         {
@@ -374,137 +392,9 @@ namespace auxmic
             }
         }
 
-        internal void SaveMatch(string filename, int startIndex, int length)
-        {
-            this.SoundFile.SaveMatch(filename, startIndex, length);
-        }
-
-        /// <summary>
-        /// Хэширование массива (кастомное)
-        /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        private static int CombineHashCodes(params Int16[] data)
-        {
-            if (data == null)
-            {
-                throw new ArgumentNullException("data");
-            }
-
-            if (data.Length == 0)
-            {
-                throw new IndexOutOfRangeException();
-            }
-
-            if (data.Length == 1)
-            {
-                return data[0];
-            }
-
-            int result = data[0];
-
-            for (var i = 1; i < data.Length; i++)
-            {
-                result = (result << 5) | (result >> 29) ^ data[i];
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Расчёт хэшей от максимальных магнитуд по окнам для всего звукового файла.
-        /// </summary>
-        /// <returns></returns>
-        private Int32[] GetHashes()
-        {
-            // check is cached value exists
-            string cachedFilename = GetCachedFilename();
-
-            if (FileCache.Contains(cachedFilename))
-            {
-                ReportProgress(this.MaxProgressValue);
-
-                return FileCache.Get<Int32[]>(cachedFilename);
-            }
-
-            int L = _syncParams.L;
-            int N = this.DataLength;
-
-            Complex[] segment = new Complex[L];
-
-            int ranges = (int)Math.Ceiling(((decimal)(L / 2) / _syncParams.FreqRangeStep));
-
-            Int32[] hashes = new Int32[N / L];
-
-            int row = 0;
-
-            // перебираем все данные по т.н. окнам
-            for (int i = 0; i <= N - L; i += L)
-            {
-                this.CancellationTokenSource.Token.ThrowIfCancellationRequested();
-
-                // читаем необходимое количество данных из левого канала в "окно"
-                segment = this.SoundFile.ReadComplex(L);
-
-                // применяем оконную функцию через делегат
-                _syncParams.WindowFunction(segment);
-
-                // In-place FFT-преобразование этого временного массива
-                Fourier.FFT(segment, Direction.Backward);
-
-                // считаем powers в этом же цикле
-                // это массив частот с максимальными магнитудами
-                // диапазон частот задаётся шагом rangeStep от 0
-                Int16[] segmentPowers = new Int16[ranges];
-
-                double[] maxMagnitude = new double[ranges];
-
-                for (Int16 freq = 0; freq < L / 2; freq++)
-                {
-                    double magnitude = Complex.Abs(Complex.Log10(segment[freq]));
-
-                    // определяем в какой диапазон частот с шагом rangeStep попадает текущая частота
-                    int index = freq / _syncParams.FreqRangeStep;
-
-                    // если найдена максимальная магнитуда, запоминаем её частоту в powers
-                    if (magnitude > maxMagnitude[index])
-                    {
-                        maxMagnitude[index] = magnitude;
-                        segmentPowers[index] = freq;
-                    }
-                }
-
-                // расчитываем хэши по каждому окну на основе power - массива частот с максимальными магнитудами
-                hashes[row] = CombineHashCodes(segmentPowers);
-
-                row++;
-
-                ReportProgress(row);
-            }
-
-            // add to cache
-            FileCache.Set(cachedFilename, hashes);
-
-            return hashes;
-        }
-
         internal void SetProgressMax(Int32 masterHashLength = 0)
         {
-            if (this.SoundFile == null)
-            {
-                // файл пока копируется
-                this.MaxProgressValue = 0;
-            }
-            else if (masterHashLength == 0)
-            {
-                // максимальное значение прогресса для расчётов хэшей
-                this.MaxProgressValue = this.DataLength / _syncParams.L;
-            }
-            else
-            {
-                // максимальное значение прогресса для синхронизации
-                this.MaxProgressValue = masterHashLength - this.Hashes.Length + 1;
-            }
+            this.MaxProgressValue = masterHashLength;
         }
 
         /// <summary>
@@ -514,8 +404,9 @@ namespace auxmic
         {
             SetProgressMax();
 
-            this.Hashes = GetHashes();
+            Hashes = _fingerprinter.CreateFingerPrints(this);
         }
+
 
         /// <summary>
         /// Starts synching with master record.
@@ -525,11 +416,17 @@ namespace auxmic
         {
             // since synch consider that files may not completely overlap,
             // use the maximum possible length of both files
-            SetProgressMax(master.Hashes.Length+this.Hashes.Length-1);
+            // SetProgressMax(master.Hashes.Count+this.Hashes.Count-1);
+            SetProgressMax(100);
 
-            this.StartIndex = Match(master);
+            _matchResult = Match(master);
 
-            this.Offset = TimeSpan.FromSeconds((double)this.StartIndex / this.WaveFormat.SampleRate);
+            if (MatchResult == null)
+            {
+                return;
+            }
+            
+            this.Offset = TimeSpan.FromSeconds(MatchResult.TrackMatchStartsAt + Math.Abs(MatchResult.QueryMatchStartsAt));
         }
 
         /// <summary>
@@ -558,40 +455,16 @@ namespace auxmic
             if (this.SoundFile != null) this.SoundFile.Dispose();
 
             // удаляем закэшированные данные, если есть
-            FileCache.Remove(GetCachedFilename());
-
-            // удаляем временную wav-копию
-            RemoveTempFile();
-        }
-
-        /// <summary>
-        /// Удаление временной копии wav-файла.
-        /// </summary>
-        private void RemoveTempFile()
-        {
-            if (this.SoundFile != null && File.Exists(this.SoundFile.TempFilename))
-            {
-                try
-                {
-                    File.Delete(this.SoundFile.TempFilename);
-                }
-                catch (IOException ex)
-                {
-                    // if the file is used by another instance, do not throw exception
-                    if (ex.HResult != ERROR_SHARING_VIOLATION)
-                    {
-                        throw;
-                    }
-                }
-            }
+            _fingerprinter.Cleanup(this);
         }
 
         /// <summary>
         /// Матчинг (синхронизация) файла.
+        /// Synchronise the clip with master
         /// </summary>
         /// <param name="master"></param>
         /// <returns></returns>
-        private Int32 Match(Clip master)
+        private ClipMatch Match(Clip master)
         {
             if (master == null)
             {
@@ -612,78 +485,9 @@ namespace auxmic
             this.IsMatching = true;
             this.ProgressValue = 0;
 
-            int startIndex = Match(master.Hashes, this.Hashes);
+            this.CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
-            return startIndex * this._syncParams.L;
-        }
-
-        private int Match(int[] hq_hashes, int[] lq_hashes)
-        {
-            int maxMatches = 0;
-
-            int start = -lq_hashes.Length + 1;
-            int end = hq_hashes.Length;
-
-            int startIndex = start;
-
-            //for (int hq_idx = start; hq_idx < end; hq_idx++)
-            Parallel.For(start, end, hq_idx =>
-            {
-                this.CancellationTokenSource.Token.ThrowIfCancellationRequested();
-
-                int intersectionStart = Math.Max(hq_idx, 0);
-
-                int intersectionLength = Min(
-                    lq_hashes.Length,
-                    lq_hashes.Length + hq_idx,
-                    hq_hashes.Length - hq_idx,
-                    hq_hashes.Length);
-
-                int matchesCount = 0;
-
-                for (int intersectionIndexHQ = intersectionStart;
-                     intersectionIndexHQ < intersectionLength + intersectionStart;
-                     intersectionIndexHQ++)
-                {
-                    int intersectionIndexLQ = intersectionIndexHQ - hq_idx;
-
-                    if (hq_hashes[intersectionIndexHQ] == lq_hashes[intersectionIndexLQ])
-                    {
-                        matchesCount++;
-                    }
-                }
-
-                if (matchesCount > maxMatches)
-                {
-                    maxMatches = matchesCount;
-                    startIndex = hq_idx;
-                }
-
-                ReportProgress(hq_idx + 1);
-            });
-
-            return startIndex;
-        }
-
-        private int Min(params int[] args)
-        {
-            return args.Min();
-        }
-
-        /// <summary>
-        /// Возвращает имя уже посчитанных хэшей для файла.
-        /// Оказалось, что важно различать временные файлы с посчитанными хэшами по SampleRate,
-        /// без различения по SampleRate возможна ситуация, когда загрузится кэш хэшей, посчитанный по 
-        /// другому SampleRate. Такое возможно, если обработать два файла с различными SampleRate, 
-        /// а затем поменять их местами (мастером сделать другой).
-        /// Если у клипа не задан _resampleFormat, то это мастер-запись и берём SampleRate из SoundFile.
-        /// </summary>
-        /// <returns></returns>
-        private string GetCachedFilename()
-        {
-            return FileCache.GetTempFilename(
-                    this.Filename,
-                    this._resampleFormat == null ? this.SoundFile.WaveFormat.SampleRate : this._resampleFormat.SampleRate);
+            return _fingerprinter.matchClips(master, this);
         }
     }
 }

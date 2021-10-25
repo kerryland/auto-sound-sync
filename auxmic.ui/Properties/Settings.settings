@@ -5,5 +5,8 @@
     <Setting Name="FFMPEG_EXE_PATH" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="SYNCHRONIZER" Type="System.String" Scope="User">
+      <Value Profile="(Default)">SoundFingerprinting</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

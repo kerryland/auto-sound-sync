@@ -1,11 +1,16 @@
 ﻿using System;
-using NAudio.Wave;
+using System.Diagnostics;
+using System.IO;
 using System.Numerics;
+using NAudio.Wave;
 
 namespace auxmic
 {
-    internal sealed class SoundFile : IDisposable
+    public class SoundFile : IDisposable
     {
+        // HRESULT: 0x20 (-2147024864)
+        private const int ERROR_SHARING_VIOLATION = -2147024864;
+
         /// <summary>
         /// Имя исходного файла - может быть аудио- или видео-контейнер
         /// </summary>
@@ -18,9 +23,11 @@ namespace auxmic
 
         internal WaveFormat WaveFormat { get; set; }
 
-        internal WaveFileReader FileReader { get; set; }
-
+        // Length in samples
         internal int DataLength { get; set; }
+
+        // Length in bytes
+        public long Length { get; set; }
 
         internal SoundFile(string filename, WaveFormat resampleFormat)
         {
@@ -32,17 +39,23 @@ namespace auxmic
             {
                 ExtractAndResampleAudio(resampleFormat);
             }
-            
+
             ReadWave(this.TempFilename);
         }
 
         private void ReadWave(string filename)
         {
-            this.FileReader = new WaveFileReader(filename);
+            Debug.Assert(filename != null, nameof(filename) + " != null");
 
-            this.WaveFormat = this.FileReader.WaveFormat;
-
-            this.DataLength = (int)(this.FileReader.Length / this.WaveFormat.BlockAlign);
+            using (var fs = new FileStream(this.TempFilename, FileMode.Open, FileAccess.Read)) // needs its own "using" otherwise it doesn't get closed
+            using (var fileReader = new WaveFileReader(fs))
+            {
+                this.WaveFormat = fileReader.WaveFormat;
+                
+                this.DataLength = (int) (fileReader.Length / this.WaveFormat.BlockAlign);
+                
+                this.Length = fileReader.Length;
+            }
         }
 
         private void ExtractAndResampleAudio(WaveFormat resampleFormat)
@@ -51,7 +64,8 @@ namespace auxmic
             {
                 if (NeedResample(reader.WaveFormat, resampleFormat))
                 {
-                    using (var resampler = new MediaFoundationResampler(reader, CreateOutputFormat(resampleFormat ?? reader.WaveFormat)))
+                    using (var resampler = new MediaFoundationResampler(reader,
+                        CreateOutputFormat(resampleFormat ?? reader.WaveFormat)))
                     {
                         WaveFileWriter.CreateWaveFile(this.TempFilename, resampler);
                     }
@@ -81,11 +95,11 @@ namespace auxmic
             return inputFormat.SampleRate != resampleFormat.SampleRate; /* || (inputFormat.BitsPerSample != resampleFormat.BitsPerSample)*/
         }
 
-        private WaveFormat CreateOutputFormat(WaveFormat resapleFormat)
+        private WaveFormat CreateOutputFormat(WaveFormat resampleFormat)
         {
             int channels = 1;
 
-            WaveFormat waveFormat = new WaveFormat(resapleFormat.SampleRate, resapleFormat.BitsPerSample, channels);
+            WaveFormat waveFormat = new WaveFormat(resampleFormat.SampleRate, resampleFormat.BitsPerSample, channels);
 
             return waveFormat;
         }
@@ -94,81 +108,34 @@ namespace auxmic
         /// http://mark-dot-net.blogspot.ru/2009/09/trimming-wav-file-using-naudio.html
         /// </summary>
         /// <param name="filename"></param>
-        /// <param name="startIndex"></param>
-        /// <param name="length"></param>
-        internal void SaveMatch(string filename, int startIndex, int length)
+        /// <param name="queryMatchStartsAt" description="Location in low quality file where audio matches. bytes"></param>
+        /// <param name="trackMatchStartsAt" description="Location in master file where audio begins. bytes"></param>
+        /// <param name="length" description="Length of the LQ file in bytes"></param>
+        internal void SaveMatch(string filename, double queryMatchStartsAt, double trackMatchStartsAt, long length)
         {
-            int startPos = startIndex * this.WaveFormat.BlockAlign;
-            int endPos = (startIndex + length) * this.WaveFormat.BlockAlign;
-
             using (var reader = new WaveFileReader(this.TempFilename))
             using (var writer = new WaveFileWriter(filename, this.WaveFormat))
             {
-                // if there is a negative offset from master record
-                // start exporting from the beginning of the master
-                // see issue #5:
-                //   ArgumentOutOfRangeException while exporting synced file with negative offset
-                reader.Position = startPos >= 0 ? startPos : 0;
                 byte[] buffer = new byte[1024];
 
-                while (reader.Position < Math.Min(endPos, reader.Length))
+                var trackEndPosition  = Math.Abs((queryMatchStartsAt * WaveFormat.AverageBytesPerSecond) - length);
+
+                var trackStartPosition = trackMatchStartsAt * WaveFormat.AverageBytesPerSecond;
+                reader.Position = (long) trackStartPosition;
+
+                while (writer.Position < trackEndPosition)
                 {
-                    int bytesRequired = (int)(endPos - reader.Position);
-                    if (bytesRequired > 0)
+                    int bytesRead = reader.Read(buffer, 0, buffer.Length);
+                    if (bytesRead > 0)
                     {
-                        int bytesToRead = Math.Min(bytesRequired, buffer.Length);
-                        int bytesRead = reader.Read(buffer, 0, bytesToRead);
-                        if (bytesRead > 0)
-                        {
-                            writer.Write(buffer, 0, bytesRead);
-                        }
-                        else
-                        {
-                            break;
-                        }
+                        writer.Write(buffer, 0, bytesRead);
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Читает данные _левого_ канала в массив Int32
-        /// </summary>
-        /// <param name="samplesToRead"></param>
-        /// <returns></returns>
-        internal Int32[] Read(int samplesToRead)
-        {
-            Int32[] result = new Int32[samplesToRead];
-
-            int blockAlign = this.WaveFormat.BlockAlign;
-            int channels = this.WaveFormat.Channels;
-
-            byte[] buffer = new byte[blockAlign * samplesToRead];
-
-            int bytesRead = this.FileReader.Read(buffer, 0, blockAlign * samplesToRead);
-
-            for (int sample = 0; sample < bytesRead / blockAlign; sample++)
-            {
-                switch (this.WaveFormat.BitsPerSample)
-                {
-                    case 8:
-                        result[sample] = (Int16)buffer[sample * blockAlign];
-                        break;
-
-                    case 16:
-                        result[sample] = BitConverter.ToInt16(buffer, sample * blockAlign);
-                        break;
-
-                    case 32:
-                        result[sample] = BitConverter.ToInt32(buffer, sample * blockAlign);
-                        break;
-
-                    default:
-                        throw new NotSupportedException(String.Format("BitDepth '{0}' not supported. Try 8, 16 or 32-bit audio instead.", this.WaveFormat.BitsPerSample));
-                }
-            }
-
-            return result;
         }
 
         /// <summary>
@@ -179,7 +146,7 @@ namespace auxmic
         /// </summary>
         /// <param name="samplesToRead"></param>
         /// <returns></returns>
-        internal Complex[] ReadComplex(int samplesToRead)
+        internal Complex[] ReadComplex(WaveFileReader fileReader, int samplesToRead)
         {
             Complex[] result = new Complex[samplesToRead];
 
@@ -188,14 +155,14 @@ namespace auxmic
 
             byte[] buffer = new byte[blockAlign * samplesToRead];
 
-            int bytesRead = this.FileReader.Read(buffer, 0, blockAlign * samplesToRead);
+            int bytesRead = fileReader.Read(buffer, 0, blockAlign * samplesToRead);
 
             for (int sample = 0; sample < bytesRead / blockAlign; sample++)
             {
                 switch (this.WaveFormat.BitsPerSample)
                 {
                     case 8:
-                        result[sample] = (Int16)buffer[sample * blockAlign];
+                        result[sample] = (Int16) buffer[sample * blockAlign];
                         break;
 
                     case 16:
@@ -207,7 +174,9 @@ namespace auxmic
                         break;
 
                     default:
-                        throw new NotSupportedException(String.Format("BitDepth '{0}' not supported. Try 8, 16 or 32-bit audio instead.", this.WaveFormat.BitsPerSample));
+                        throw new NotSupportedException(String.Format(
+                            "BitDepth '{0}' not supported. Try 8, 16 or 32-bit audio instead.",
+                            this.WaveFormat.BitsPerSample));
                 }
             }
 
@@ -220,11 +189,23 @@ namespace auxmic
         //}
 
         // TODO: Check releasing FileReader - test are not run well - file locked!
+        // No need to release FileReader anymore. I found the bug :-)
         public void Dispose()
         {
-            if (this.FileReader != null)
+            if (File.Exists(TempFilename))
             {
-                this.FileReader.Close();
+                try
+                {
+                    File.Delete(TempFilename);
+                }
+                catch (IOException ex)
+                {
+                    // if the file is used by another instance, do not throw exception
+                    if (ex.HResult != ERROR_SHARING_VIOLATION)
+                    {
+                        throw;
+                    }
+                }
             }
         }
     }
