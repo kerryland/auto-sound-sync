@@ -426,7 +426,7 @@ namespace auxmic
                 return;
             }
             
-            this.Offset = TimeSpan.FromSeconds(MatchResult.TrackMatchStartsAt + Math.Abs(MatchResult.QueryMatchStartsAt));
+            this.Offset = TimeSpan.FromSeconds(MatchResult.Offset);
         }
 
         /// <summary>

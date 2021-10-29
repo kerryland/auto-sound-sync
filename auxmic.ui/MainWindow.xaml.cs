@@ -192,14 +192,17 @@ namespace auxmic.ui
 
             if (saveFileDialog.ShowDialog() == true)
             {
-                var duration = (clip.Length() / clip.WaveFormat.AverageBytesPerSecond) - clip.MatchResult.QueryMatchStartsAt;
+                var durationLQ = (clip.Length() / clip.WaveFormat.AverageBytesPerSecond) - clip.MatchResult.QueryMatchStartsAt;
+                var durationHQ = (_clipSynchronizer.Master.Length() / clip.WaveFormat.AverageBytesPerSecond) - clip.MatchResult.TrackMatchStartsAt;
+                var duration = Math.Min(durationHQ, durationLQ);
                 
                 // export media
                 FFmpegTool ffmpeg = new FFmpegTool(ffmpegExePath);
                 ffmpeg.Export(
                     clip.Filename, 
                     _clipSynchronizer.Master.Filename,
-                    clip.Offset,
+                    clip.MatchResult.QueryMatchStartsAt,
+                    clip.MatchResult.TrackMatchStartsAt,
                     saveFileDialog.FileName,
                     duration);
             }

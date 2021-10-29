@@ -23,7 +23,7 @@ namespace auxmic.sync
             FreqRangeStep = 60,
             WindowFunction = WindowFunctions.Hamming
         };
-        
+
         public object CreateFingerPrints(Clip clip)
         {
             return GetHashes(clip);
@@ -49,15 +49,15 @@ namespace auxmic.sync
 
             int L = _syncParams.L;
             long N = soundFile.DataLength;
-            
+
             int ranges = (int) Math.Ceiling(((decimal) (L / 2) / _syncParams.FreqRangeStep));
 
             Int32[] hashes = new Int32[N / L];
 
-            clip.MaxProgressValue = hashes.Length; 
-                
+            clip.MaxProgressValue = hashes.Length;
+
             int row = 0;
-            
+
             // перебираем все данные по т.н. окнам
             // Loop through all the data in the "window"
             using (var reader = new WaveFileReader(waveFile))
@@ -110,7 +110,7 @@ namespace auxmic.sync
             }
 
             // add to cache
-           FileCache.Set(GetCachedFilename(clip), hashes);
+            FileCache.Set(GetCachedFilename(clip), hashes);
 
             return hashes;
         }
@@ -153,35 +153,33 @@ namespace auxmic.sync
 
             return result;
         }
-        
+
         public ClipMatch matchClips(Clip master, Clip lqClip)
         {
             int[] hq_hashes = (int[]) master.Hashes;
             int[] lq_hashes = (int[]) lqClip.Hashes;
 
-            int mostMatches = 0;
+            int maxMatches = 0;
 
             int start = -lq_hashes.Length + 1;
             int end = hq_hashes.Length;
 
             int startIndex = start;
-            int offsetIndex = start;
-            
+            int matchLQ = 0;
+            int matchOffset = 0;
+
             lqClip.SetProgressMax(-start + end);
             int progressCount = 0;
-            
+
             // for (int hq_idx = start; hq_idx < end; hq_idx++)
             Parallel.For(start, end, hq_idx =>
                 {
-                    int indexHQ = 0;
-                    int indexLQ = 0;
-
-                    int mostMatchIndexHQ = 0;
-                    int mostMatchIndexLQ = 0;
-
                     lqClip.CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                     int intersectionStart = Math.Max(hq_idx, 0);
+                    int indexHQ = 0;
+                    int indexLQ = -1;
+                    int offset  = 0;
 
                     int intersectionLength = Min(
                         lq_hashes.Length,
@@ -190,7 +188,6 @@ namespace auxmic.sync
                         hq_hashes.Length);
 
                     int matchesCount = 0;
-                    int mostMatchesInWindow = 0;
 
                     for (int intersectionIndexHQ = intersectionStart;
                         intersectionIndexHQ < intersectionLength + intersectionStart;
@@ -200,33 +197,25 @@ namespace auxmic.sync
 
                         if (hq_hashes[intersectionIndexHQ] == lq_hashes[intersectionIndexLQ])
                         {
-                            if (matchesCount == 0)
+                            if (indexLQ == -1)
                             {
                                 indexHQ = intersectionIndexHQ;
                                 indexLQ = intersectionIndexLQ;
+                                offset = hq_idx;
                             }
 
                             matchesCount++;
-                            
-                            if (matchesCount > mostMatchesInWindow)
-                            {
-                                mostMatchesInWindow = matchesCount;
-                                mostMatchIndexHQ = indexHQ;
-                                mostMatchIndexLQ = indexLQ;
-                            }
-                        }
-                        else
-                        {
-                            matchesCount = 0;
                         }
                     }
 
                     Monitor.Enter(this);
-                    if (mostMatchesInWindow > mostMatches)
+                    if (matchesCount > maxMatches)
                     {
-                        mostMatches = mostMatchesInWindow;
-                        startIndex = mostMatchIndexHQ;
-                        offsetIndex = mostMatchIndexLQ;
+                        maxMatches = matchesCount;
+                        startIndex = indexHQ;
+                        matchLQ = indexLQ;
+                        matchOffset = offset;
+                        ;
                     }
 
                     Monitor.Exit(this);
@@ -235,19 +224,20 @@ namespace auxmic.sync
                 }
             );
 
-            if (mostMatches == 0)
+            if (maxMatches == 0)
             {
                 return null;
             }
 
-            double hqPosition = ((double)startIndex * _syncParams.L / lqClip.WaveFormat.SampleRate);
-            double lqPosition = ((double)offsetIndex * _syncParams.L / lqClip.WaveFormat.SampleRate);
+            double hqPosition = ((double) startIndex * _syncParams.L / lqClip.WaveFormat.SampleRate);
+            double lqPosition = ((double) matchLQ * _syncParams.L / lqClip.WaveFormat.SampleRate);
+            double offsetPosition = ((double) matchOffset * _syncParams.L / lqClip.WaveFormat.SampleRate);
 
             Debug.WriteLine("Seek positions are HQ " + hqPosition + " and LQ " + lqPosition);
 
-            return new ClipMatch(lqPosition, hqPosition);
+            return new ClipMatch(lqPosition, hqPosition, offsetPosition);
         }
-        
+
         /// <summary>
         /// Возвращает имя уже посчитанных хэшей для файла.
         /// Оказалось, что важно различать временные файлы с посчитанными хэшами по SampleRate,
