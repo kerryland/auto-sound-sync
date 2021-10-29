@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.IO;
 using auxmic.sync;
@@ -50,6 +51,10 @@ namespace auxmic
             if (_loadMasterTask != null)
             {
                 _loadMasterTask.Wait();
+                if (_loadMasterTask.Exception != null)
+                {
+                    Debug.WriteLine("Died with " + _loadMasterTask.Exception.ToString());
+                }
             }
 
             // Используем две отдельных задачи, вместо цепочки задач.
@@ -78,7 +83,17 @@ namespace auxmic
                 TaskScheduler.FromCurrentSynchronizationContext());
 
             _processMasterTask = _loadMasterTask.ContinueWith(
-                (antecedent) => { Master.CalcHashes(); },
+                (antecedent) =>
+                {
+                    try
+                    {
+                        Master.CalcHashes();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine("Failed " + e.Message);
+                    }
+                },
                 this.Master.CancellationTokenSource.Token,
                 TaskContinuationOptions.LongRunning,
                 _taskScheduler);
@@ -111,6 +126,10 @@ namespace auxmic
 
             // ждём загрузки мастер-записи, т.к. для ресемплинга нам нужно знать его WaveFormat
             _loadMasterTask.Wait();
+            if (_loadMasterTask.Exception != null)
+            {
+                throw new ApplicationException("Died with " + _loadMasterTask.Exception.ToString());
+            }
 
             Clip clip = new Clip(LQfilename, this.Master.Fingerprinter, this.Master.WaveFormat)
             {
@@ -138,7 +157,17 @@ namespace auxmic
                 TaskScheduler.FromCurrentSynchronizationContext());
 
             Task processTask = loadFileTask.ContinueWith(
-                    (antecedent) => { clip.CalcHashes(); },
+                    (antecedent) =>
+                    {
+                        try
+                        {
+                            clip.CalcHashes();
+                        }
+                        catch (Exception e)
+                        {
+                            throw new ApplicationException("Bang!" + e.Message);
+                        }
+                    },
                     clip.CancellationTokenSource.Token,
                     TaskContinuationOptions.LongRunning,
                     _taskScheduler)
@@ -148,6 +177,11 @@ namespace auxmic
                         // ждём завершения хэширования мастер-записи
                         _processMasterTask.Wait();
 
+                        if (_processMasterTask.Exception != null)
+                        {
+                            Debug.WriteLine("Task failed " + _processMasterTask.Exception.ToString());
+                            throw new ApplicationException("Bang2");
+                        }
                         if (_processMasterTask.IsCanceled)
                         {
                             return;
