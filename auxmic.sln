@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31729.503
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "auxmic", "auxmic\auxmic.csproj", "{743DCA1A-A389-45FE-A3E3-6A2FE96C9A67}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "auxmic", "auxmic\auxmic.csproj", "{743DCA1A-A389-45FE-A3E3-6A2FE96C9A67}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "uml", "uml", "{5D54FC0E-12C0-4529-AE52-27AEFBD4E1B6}"
 	ProjectSection(SolutionItems) = preProject
@@ -20,7 +20,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "auxmic.ui", "auxmic.ui\auxmic.ui.csproj", "{24FD5E19-CEEC-4E68-BE14-33DE34573B13}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "auxmic.ui", "auxmic.ui\auxmic.ui.csproj", "{24FD5E19-CEEC-4E68-BE14-33DE34573B13}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,8 +33,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{743DCA1A-A389-45FE-A3E3-6A2FE96C9A67}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{743DCA1A-A389-45FE-A3E3-6A2FE96C9A67}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{743DCA1A-A389-45FE-A3E3-6A2FE96C9A67}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{743DCA1A-A389-45FE-A3E3-6A2FE96C9A67}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{743DCA1A-A389-45FE-A3E3-6A2FE96C9A67}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{743DCA1A-A389-45FE-A3E3-6A2FE96C9A67}.Debug|x86.ActiveCfg = Debug|x86
 		{743DCA1A-A389-45FE-A3E3-6A2FE96C9A67}.Debug|x86.Build.0 = Debug|x86
 		{743DCA1A-A389-45FE-A3E3-6A2FE96C9A67}.Release|Any CPU.ActiveCfg = Release|x86
@@ -53,8 +53,8 @@ Global
 		{156DCEEF-900F-483D-8822-CC3BDAB055B9}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{156DCEEF-900F-483D-8822-CC3BDAB055B9}.Release|x86.ActiveCfg = Release|Any CPU
 		{24FD5E19-CEEC-4E68-BE14-33DE34573B13}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{24FD5E19-CEEC-4E68-BE14-33DE34573B13}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{24FD5E19-CEEC-4E68-BE14-33DE34573B13}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{24FD5E19-CEEC-4E68-BE14-33DE34573B13}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{24FD5E19-CEEC-4E68-BE14-33DE34573B13}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{24FD5E19-CEEC-4E68-BE14-33DE34573B13}.Debug|x86.ActiveCfg = Debug|x86
 		{24FD5E19-CEEC-4E68-BE14-33DE34573B13}.Debug|x86.Build.0 = Debug|x86
 		{24FD5E19-CEEC-4E68-BE14-33DE34573B13}.Release|Any CPU.ActiveCfg = Release|x86
