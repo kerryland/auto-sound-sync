@@ -2,11 +2,10 @@
 using System.Windows.Controls;
 using Microsoft.Win32;
 using System.IO;
-using System.Windows.Data;
-using System.ComponentModel;
 using System;
 using System.Windows.Controls.Primitives;
 using auxmic.sync;
+using auxmic.editorExport;
 
 namespace auxmic.ui
 {
@@ -258,6 +257,16 @@ namespace auxmic.ui
             options.ShowDialog();
         }
 
+        private void cmd_ExportFinalCutPro(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            using StreamWriter sw = new StreamWriter(this._clipSynchronizer.Master.Filename + "_fcp7.xml");
+            
+            FinalCutProExporter exporter = new FinalCutProExporter();
+            
+            exporter.Export(this._clipSynchronizer.Master,
+                            this._clipSynchronizer.LQClips, sw);
+        }
+        
         private void cmd_OpenCacheFolder(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
         {
             System.Diagnostics.Process.Start(_clipSynchronizer.GetTempPath());

@@ -217,6 +217,8 @@
 
         <RoutedUICommand x:Key="SetMaster" Text="Set high quality audio source" />
         <RoutedUICommand x:Key="AddLQ" Text="Add media to synchronize" />
+        <RoutedUICommand x:Key="ExportFinalCutPro" Text="Export Project for FinalCutPro" />
+      
         <RoutedUICommand x:Key="OpenCacheFolder" Text="Open cache folder" />
         <RoutedUICommand x:Key="ClearCache" Text="Clear cache" />
         <RoutedUICommand x:Key="About" Text="About" />
@@ -228,6 +230,7 @@
         <CommandBinding Command="{StaticResource SetMaster}" Executed="cmd_AddMaster"></CommandBinding>
         <CommandBinding Command="{StaticResource AddLQ}" Executed="cmd_AddLQ"></CommandBinding>
         <CommandBinding Command="{StaticResource OpenCacheFolder}" Executed="cmd_OpenCacheFolder"></CommandBinding>
+        <CommandBinding Command="{StaticResource ExportFinalCutPro}" Executed="cmd_ExportFinalCutPro"></CommandBinding>
         <CommandBinding Command="{StaticResource ClearCache}" Executed="cmd_ClearCache"></CommandBinding>
         <CommandBinding Command="{StaticResource About}" Executed="cmd_About"></CommandBinding>
         <CommandBinding Command="{StaticResource Options}" Executed="cmd_Options"></CommandBinding>
@@ -249,6 +252,8 @@
             <MenuItem Header="File">
                 <MenuItem Header="Set high quality audio source" Command="{StaticResource SetMaster}" Foreground="#596063"></MenuItem>
                 <MenuItem Header="Add media to synchronize" Command="{StaticResource AddLQ}" Foreground="#596063"></MenuItem>
+                <Separator />
+                <MenuItem Header="Export Project to FinalCut Pro 7" Command="{StaticResource ExportFinalCutPro}" Foreground="#596063"></MenuItem>
                 <Separator />
                 <MenuItem Header="Open cache folder" Command="{StaticResource OpenCacheFolder}" Foreground="#596063"></MenuItem>
                 <MenuItem Header="Clear cache" Command="{StaticResource ClearCache}" Foreground="#596063"></MenuItem>
