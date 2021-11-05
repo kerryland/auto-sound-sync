@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Numerics;
 using NAudio.Wave;
 
 namespace auxmic
 {
-    public class SoundFile : IDisposable
+    public class SoundFile : IDisposable, ISoundFile
     {
         // HRESULT: 0x20 (-2147024864)
         private const int ERROR_SHARING_VIOLATION = -2147024864;
@@ -14,20 +13,20 @@ namespace auxmic
         /// <summary>
         /// Имя исходного файла - может быть аудио- или видео-контейнер
         /// </summary>
-        internal string Filename { get; set; }
+        public string Filename { get; }
 
         /// <summary>
         /// Имя извлечённого и ресемплированного файла WAV сохранённого во временной директории
         /// </summary>
-        internal string TempFilename { get; set; }
+        public string TempFilename { get;  }
 
-        internal WaveFormat WaveFormat { get; set; }
+        public WaveFormat WaveFormat { get; private set; }
 
         // Length in samples
-        internal int DataLength { get; set; }
+        public int DataLength { get; private set; }
 
         // Length in bytes
-        public long Length { get; set; }
+        public long Length { get; private set; }
 
         internal SoundFile(string filename, WaveFormat resampleFormat)
         {
@@ -111,7 +110,7 @@ namespace auxmic
         /// <param name="queryMatchStartsAt" description="Location in low quality file where audio matches. bytes"></param>
         /// <param name="trackMatchStartsAt" description="Location in master file where audio begins. bytes"></param>
         /// <param name="length" description="Length of the LQ file in bytes"></param>
-        internal void SaveMatch(string filename, double queryMatchStartsAt, double trackMatchStartsAt, long length)
+        public void SaveMatch(string filename, double queryMatchStartsAt, double trackMatchStartsAt, long length)
         {
             using (var reader = new WaveFileReader(this.TempFilename))
             using (var writer = new WaveFileWriter(filename, this.WaveFormat))
@@ -138,50 +137,6 @@ namespace auxmic
             }
         }
 
-        /// <summary>
-        /// Метод полностью повторяет <see cref="internal Int32[] Read(int samplesToRead)"/>, 
-        /// за исключением возвращаемого значения, не Int32[], а сразу Complex[].
-        /// Различаются только одной строкой: Complex[] result = new Complex[samplesToRead];
-        /// Не получилось сделать через generics
-        /// </summary>
-        /// <param name="samplesToRead"></param>
-        /// <returns></returns>
-        internal Complex[] ReadComplex(WaveFileReader fileReader, int samplesToRead)
-        {
-            Complex[] result = new Complex[samplesToRead];
-
-            int blockAlign = this.WaveFormat.BlockAlign;
-            int channels = this.WaveFormat.Channels;
-
-            byte[] buffer = new byte[blockAlign * samplesToRead];
-
-            int bytesRead = fileReader.Read(buffer, 0, blockAlign * samplesToRead);
-
-            for (int sample = 0; sample < bytesRead / blockAlign; sample++)
-            {
-                switch (this.WaveFormat.BitsPerSample)
-                {
-                    case 8:
-                        result[sample] = (Int16) buffer[sample * blockAlign];
-                        break;
-
-                    case 16:
-                        result[sample] = BitConverter.ToInt16(buffer, sample * blockAlign);
-                        break;
-
-                    case 32:
-                        result[sample] = BitConverter.ToInt32(buffer, sample * blockAlign);
-                        break;
-
-                    default:
-                        throw new NotSupportedException(String.Format(
-                            "BitDepth '{0}' not supported. Try 8, 16 or 32-bit audio instead.",
-                            this.WaveFormat.BitsPerSample));
-                }
-            }
-
-            return result;
-        }
 
         //~SoundFile()
         //{

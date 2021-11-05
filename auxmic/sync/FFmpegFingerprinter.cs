@@ -24,7 +24,7 @@ namespace auxmic.sync
             Debug.WriteLine("Put ffmpeg into " + Environment.CurrentDirectory + "/bin/" + (Environment.Is64BitProcess ? "x64" : "x86"));
             // or set ffmpeg.RootPath = path using FFmpeg.AutoGen; ;
 
-            SoundFile soundFile = clip.SoundFile;
+            ISoundFile soundFile = clip.SoundFile;
 
             // This processes the source file without using an intermediate .wav file
             return FingerprintCommandBuilder.Instance

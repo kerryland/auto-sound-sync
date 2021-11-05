@@ -20,7 +20,7 @@ namespace auxmic.sync
         
         public object CreateFingerPrints(Clip clip)
         {
-            SoundFile soundFile = clip.SoundFile;
+            ISoundFile soundFile = clip.SoundFile;
 
             // This also builds the .wav file automatically if it doesn't exist.
             return FingerprintCommandBuilder.Instance

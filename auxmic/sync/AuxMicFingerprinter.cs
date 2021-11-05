@@ -5,9 +5,10 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using auxmic.fft;
+using auxmic.sync;
 using NAudio.Wave;
 
-namespace auxmic.sync
+namespace auxmic
 {
     /*
      * Perform fingerprinting with the original auxmic algorithm.
@@ -37,7 +38,7 @@ namespace auxmic.sync
         /// <returns></returns>
         private Int32[] GetHashes(Clip clip)
         {
-            SoundFile soundFile = clip.SoundFile;
+            ISoundFile soundFile = clip.SoundFile;
             string waveFile = soundFile.TempFilename;
 
             if (FileCache.Contains(GetCachedFilename(clip)))
@@ -68,7 +69,7 @@ namespace auxmic.sync
 
                     // читаем необходимое количество данных из левого канала в "окно"
                     // read a piece of the sound file for processing as a window
-                    Complex[] segment = soundFile.ReadComplex(reader, L);
+                    Complex[] segment = ReadComplex(reader,soundFile.WaveFormat, L);
 
                     // применяем оконную функцию через делегат
                     // apply a window function via a delegate
@@ -118,6 +119,51 @@ namespace auxmic.sync
         private int Min(params int[] args)
         {
             return args.Min();
+        }
+        
+        /// <summary>
+        /// Метод полностью повторяет <see cref="internal Int32[] Read(int samplesToRead)"/>, 
+        /// за исключением возвращаемого значения, не Int32[], а сразу Complex[].
+        /// Различаются только одной строкой: Complex[] result = new Complex[samplesToRead];
+        /// Не получилось сделать через generics
+        /// </summary>
+        /// <param name="samplesToRead"></param>
+        /// <returns></returns>
+        internal Complex[] ReadComplex(WaveFileReader fileReader, WaveFormat waveFormat, int samplesToRead)
+        {
+            Complex[] result = new Complex[samplesToRead];
+
+            int blockAlign = waveFormat.BlockAlign;
+            int channels = waveFormat.Channels;
+
+            byte[] buffer = new byte[blockAlign * samplesToRead];
+
+            int bytesRead = fileReader.Read(buffer, 0, blockAlign * samplesToRead);
+
+            for (int sample = 0; sample < bytesRead / blockAlign; sample++)
+            {
+                switch (waveFormat.BitsPerSample)
+                {
+                    case 8:
+                        result[sample] = (Int16) buffer[sample * blockAlign];
+                        break;
+
+                    case 16:
+                        result[sample] = BitConverter.ToInt16(buffer, sample * blockAlign);
+                        break;
+
+                    case 32:
+                        result[sample] = BitConverter.ToInt32(buffer, sample * blockAlign);
+                        break;
+
+                    default:
+                        throw new NotSupportedException(String.Format(
+                            "BitDepth '{0}' not supported. Try 8, 16 or 32-bit audio instead.",
+                            waveFormat.BitsPerSample));
+                }
+            }
+
+            return result;
         }
 
 

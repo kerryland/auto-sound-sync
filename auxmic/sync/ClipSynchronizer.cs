@@ -18,6 +18,7 @@ namespace auxmic
         private Task _processMasterTask;
 
         private TaskScheduler _taskScheduler = TaskScheduler.Current;
+        private ISoundFileFactory _soundFileFactory = new SoundFileFactory();
         
         public ClipSynchronizer()
         {
@@ -39,7 +40,7 @@ namespace auxmic
                 this.MasterClips.Clear();
             }
 
-            this.Master = new Clip(masterFilename, fingerprinter);
+            this.Master = new Clip(masterFilename, fingerprinter, _soundFileFactory);
 
             // disable export button for high quality audio source
             this.Master.DisplayExportControls = false;
@@ -131,7 +132,7 @@ namespace auxmic
                 throw new ApplicationException("Died with " + _loadMasterTask.Exception.ToString());
             }
 
-            Clip clip = new Clip(LQfilename, this.Master.Fingerprinter, this.Master.WaveFormat)
+            Clip clip = new Clip(LQfilename, this.Master.Fingerprinter, _soundFileFactory, this.Master.WaveFormat)
             {
                 // enable export button for clip
                 DisplayExportControls = true

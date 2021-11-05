@@ -20,21 +20,24 @@ namespace auxmic
 
         public IFingerprinter Fingerprinter => _fingerprinter;
 
+        private readonly ISoundFileFactory _soundFileFactory;
+
         /// <summary>
         /// Формат мастер-записи к которому надо ресемплировать остальные файлы для дальнейшей работы с ними.
         /// </summary>
-        internal WaveFormat _resampleFormat;
+        private readonly WaveFormat _resampleFormat;
 
-        internal CancellationTokenSource CancellationTokenSource = new CancellationTokenSource();
+        internal readonly CancellationTokenSource CancellationTokenSource = new CancellationTokenSource();
 
         /// <summary>
         /// Звуковой файл (с заголовком и методом чтения данных)
         /// </summary>
-        internal SoundFile SoundFile { get; set; }
+        internal ISoundFile SoundFile { get; set; }
 
         private string _filename;
         /// <summary>
         /// Полное имя файла
+        /// The full filename
         /// </summary>
         public string Filename
         {
@@ -49,6 +52,7 @@ namespace auxmic
         private string _displayname;
         /// <summary>
         /// Отображаемое имя файла (Filename без пути)
+        /// File display name (Filename without path)
         /// </summary>
         public string DisplayName
         {
@@ -169,6 +173,7 @@ namespace auxmic
         /// <summary>
         /// Хэши для файла посчитаны?
         /// </summary>
+        // ReSharper disable once MemberCanBePrivate.Global
         public bool IsHashed
         {
             get { return _isHashed; }
@@ -272,6 +277,7 @@ namespace auxmic
         /// Controls if there will be button to export synchronized result.
         /// For hiqh quality source export should be disabled.
         /// </summary>
+        // ReSharper disable once UnusedAutoPropertyAccessor.Global
         public bool DisplayExportControls { get; internal set; }
         #endregion
 
@@ -340,11 +346,14 @@ namespace auxmic
         /// </summary>
         /// <param name="filename">Filename to load</param>
         /// <param name="fingerprinter"></param>
+        /// <param name="soundFileFactory">An interface that can provide information about a soundfile</param>
         /// <param name="resampleFormat">Resample format. If not set (null) - will not resample.</param>
-        internal Clip(string filename, IFingerprinter fingerprinter, WaveFormat resampleFormat = null)
+        internal Clip(string filename, IFingerprinter fingerprinter, ISoundFileFactory soundFileFactory = null,
+            WaveFormat resampleFormat = null)
         {
             this.Filename = filename;
             _fingerprinter = fingerprinter;
+            _soundFileFactory = soundFileFactory;
             this._resampleFormat = resampleFormat;
             SetProgressMax(); // TODO: Remove?
         }
@@ -364,7 +373,8 @@ namespace auxmic
 
             try
             {
-                this.SoundFile = new SoundFile(this.Filename, this._resampleFormat);
+                this.SoundFile = _soundFileFactory.CreateSoundFile(this.Filename, this._resampleFormat);
+                // this.SoundFile = new SoundFile(this.Filename, this._resampleFormat);
             }
             catch (COMException ex)
             {

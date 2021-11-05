@@ -72,7 +72,7 @@ namespace TestProject
 
         private Clip BuildClip(string filename)
         { 
-            Clip clip = new Clip(dataFolder + filename, new AuxMicFingerprinter());
+            Clip clip = new Clip(dataFolder + filename, new AuxMicFingerprinter(), new SoundFileFactory());
             clip.LoadFile();
 
             return clip;
