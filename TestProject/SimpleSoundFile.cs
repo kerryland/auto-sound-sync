@@ -5,17 +5,15 @@ namespace TestProject
 {
     public class SimpleSoundFile : ISoundFile
     {
-        public SimpleSoundFile WithDataLength(int dataLength)
+        
+        public SimpleSoundFile WithDurationInSeconds(double durationInSeconds)
         {
-            DataLength = dataLength;
+            Length = (long) (durationInSeconds * WaveFormat.AverageBytesPerSecond);
+            DataLength = (int) (Length / WaveFormat.BlockAlign);
+
             return this;
         }
         
-        public SimpleSoundFile WithLength(long length)
-        {
-            Length = length;
-            return this;
-        }
         public SimpleSoundFile WithFilename(string filename)
         {
             Filename = filename;

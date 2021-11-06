@@ -44,11 +44,16 @@ namespace TestProject
         public static void MyClassInitialize(TestContext testContext)
         {
             // Figure out where the test data is (tests didn't run in JetBrains Rider)
+            dataFolder = GetDataFolder();
+        }
+
+        public static string GetDataFolder()
+        {
             string knownPath = @"\TestProject\";
             int knownPart = Environment.CurrentDirectory.IndexOf(knownPath);
-            dataFolder = Environment.CurrentDirectory.Remove(knownPart + knownPath.Length) + @"Data\";
+            return Environment.CurrentDirectory.Remove(knownPart + knownPath.Length) + @"Data\";
         }
-        
+
         //Use ClassCleanup to run code after all tests in a class have run
         //[ClassCleanup()]
         //public static void MyClassCleanup()
