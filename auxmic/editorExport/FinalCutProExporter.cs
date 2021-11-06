@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml;
+using NAudio.Wave;
 
 namespace auxmic.editorExport
 {
@@ -15,10 +16,17 @@ namespace auxmic.editorExport
 
         private double offsetAdjustmentMilliseconds;
         private double totalDurationSeconds;
-        
-        // TODO: This should handle an audio master file too
+        private IMediaTool _mediaTool;
+
+        public FinalCutProExporter(IMediaTool mediaTool)
+        {
+            _mediaTool = mediaTool;
+        }
+
         public void Export(Clip master, IList<Clip> clips, TextWriter output)
         {
+            bool masterIsVideo = _mediaTool.IsVideo(master.Filename);
+            
             var completeList = new List<Clip>();
             completeList.Add(master);
             completeList.AddRange(clips);
@@ -30,8 +38,7 @@ namespace auxmic.editorExport
                 Indent = true,
                 IndentChars = ("    "),
                 CloseOutput = true,
-                Encoding = Encoding.UTF8,
-                OmitXmlDeclaration = false
+                OmitXmlDeclaration = true
             };
 
             using XmlWriter writer = XmlWriter.Create(output, settings);
@@ -41,15 +48,21 @@ namespace auxmic.editorExport
             WriteStartSequence(writer, master);
 
             writer.WriteStartElement("video");
-            WriteClip(writer, master);
+            WriteVideoFormat(writer);
+
+            if (masterIsVideo)
+            {
+                WriteVideoTrack(writer, master);
+            }
+
             foreach (var clip in clips)
             {
-                WriteClip(writer, clip);
+                WriteVideoTrack(writer, clip);
             }
             writer.WriteEndElement(); // video
 
             writer.WriteStartElement("audio");
-            WriteAudioTrack(writer, master);
+            WriteAudioTrack(writer, master, masterIsVideo);
             writer.WriteEndElement(); // audio
          
             WriteEndSequence(writer);
@@ -59,6 +72,7 @@ namespace auxmic.editorExport
         }
 
         // Figure out the "left most" track so we get the track offsets correct in the NLE.
+        // Figure out the "right most" track so we can calculate the duration of all tracks.
         private void CalculateAdjustments(List<Clip> completeList)
         {
             double leftMost = 0;
@@ -85,14 +99,14 @@ namespace auxmic.editorExport
             offsetAdjustmentMilliseconds = leftMost;
         }
 
-        private void WriteStartVideoTracks(XmlWriter videoWriter)
+        private void WriteVideoFormat(XmlWriter videoWriter)
         {
             videoWriter.WriteStartElement("format");
             WriteVideoSampleCharacteristics(videoWriter);
             videoWriter.WriteEndElement(); // format
         }
 
-        private void WriteAudioTrack(XmlWriter writer, Clip clip)
+        private void WriteAudioTrack(XmlWriter writer, Clip clip, bool masterIsVideo)
         {
             writer.WriteStartElement("track");
             WriteMostOfClipItem(writer, clip, "_audio");
@@ -105,6 +119,11 @@ namespace auxmic.editorExport
             
             writer.WriteStartElement("file");
             writer.WriteAttributeString("id", clip.DisplayName + "_file");
+            if (!masterIsVideo)
+            {
+                writer.WriteElementString("pathurl", "file://" + clip.Filename.Replace("\\", "/"));
+            }
+            
             writer.WriteEndElement(); // file
             
             WriteSourceTrack(writer, "audio", "1");
@@ -142,7 +161,7 @@ namespace auxmic.editorExport
         }
 
 
-        private void WriteClip(XmlWriter writer, Clip clip)
+        private void WriteVideoTrack(XmlWriter writer, Clip clip)
         {
             writer.WriteStartElement("track");
             writer.WriteStartElement("clipitem");
@@ -164,7 +183,7 @@ namespace auxmic.editorExport
             WriteDuration(writer, clip);
             WriteRate(writer);
             writer.WriteElementString("name", clip.DisplayName);
-            writer.WriteElementString("pathurl", "file://./" + clip.DisplayName);
+            writer.WriteElementString("pathurl", "file://" + clip.Filename.Replace("\\", "/"));
 
             //------------- timecode --------------
             WriteTimecode(writer, "0");
@@ -189,8 +208,6 @@ namespace auxmic.editorExport
             writer.WriteElementString("enabled", "TRUE");
             writer.WriteElementString("locked", "FALSE");
             writer.WriteEndElement(); // track
-
-            WriteStartVideoTracks(writer);
         }
 
         private void WriteVideoSampleCharacteristics(XmlWriter writer)

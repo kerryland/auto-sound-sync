@@ -43,7 +43,26 @@ namespace TestProject
          *  see the test file in TestProject/Data/FinalCutProject.xml
          */
         [TestMethod()]
-        public void CheckExportFormat()
+        public void CheckExportFormatWhenMasterIsVideo()
+        {
+            bool masterIsVideo = true;
+            string masterFilename = "master.mp4";
+            string expectedXmlFile = "FinalCutProject-master-is-video.xml";
+            
+            PerformTest(masterFilename, masterIsVideo, expectedXmlFile);
+        }
+
+        [TestMethod()]
+        public void CheckExportFormatWhenMasterIsAudio()
+        {
+            bool masterIsVideo = false;
+            string masterFilename = "master.wav";
+            string expectedXmlFile = "FinalCutProject-master-is-audio.xml";
+            
+            PerformTest(masterFilename, masterIsVideo, expectedXmlFile);
+        }
+
+        private static void PerformTest(string masterFilename, bool masterIsVideo, string expectedXmlFile)
         {
             SimpleFingerPrinter fingerPrinter = new SimpleFingerPrinter();
 
@@ -51,7 +70,7 @@ namespace TestProject
                 .WithWaveFormat(new WaveFormat(48000, 2))
                 .WithDurationInSeconds(30 * 60);
 
-            Clip master = new Clip("master.mp4", fingerPrinter, new SimpleSoundFileFactory(masterSoundFile));
+            Clip master = new Clip(masterFilename, fingerPrinter, new SimpleSoundFileFactory(masterSoundFile));
             master.LoadFile();
 
             SimpleSoundFile clip1SoundFile = new SimpleSoundFile()
@@ -97,14 +116,29 @@ namespace TestProject
             clip3.Sync(master);
 
             var writer = new StringWriter();
-            IEditorExporter exporter = new FinalCutProExporter();
+            IEditorExporter exporter = new FinalCutProExporter(new SimpleMediaTool(masterIsVideo));
             exporter.Export(master, lqClips, writer);
 
-            XDocument expectedXml = XDocument.Load(ClipTest.GetDataFolder() + "FinalCutProject.xml");
+            XDocument expectedXml = XDocument.Load(ClipTest.GetDataFolder() + expectedXmlFile);
             XDocument actualXml = XDocument.Load(new StringReader(writer.ToString()));
 
             var deepEquals = XNode.DeepEquals(expectedXml, actualXml);
             Assert.IsTrue(deepEquals, "Expected XML not generated");
+        }
+    }
+
+    class SimpleMediaTool : IMediaTool
+    {
+        private bool _isVideo;
+
+        public SimpleMediaTool(bool isVideo)
+        {
+            _isVideo = isVideo;
+        }
+
+        public bool IsVideo(string filename)
+        {
+            return _isVideo;
         }
     }
 

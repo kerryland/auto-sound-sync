@@ -261,7 +261,7 @@ namespace auxmic.ui
         {
             using StreamWriter sw = new StreamWriter(this._clipSynchronizer.Master.Filename + "_fcp7.xml");
             
-            FinalCutProExporter exporter = new FinalCutProExporter();
+            FinalCutProExporter exporter = new FinalCutProExporter(new MediaTool());
             
             exporter.Export(this._clipSynchronizer.Master,
                             this._clipSynchronizer.LQClips, sw);
