@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Xml;
 
 namespace auxmic.editorExport
@@ -12,22 +13,24 @@ namespace auxmic.editorExport
     {
         private static int timebase = 25;
 
-        private double offsetAdjustment;
+        private double offsetAdjustmentMilliseconds;
+        private double totalDurationSeconds;
         
-        // TODO: This should only process video files
+        // TODO: This should handle an audio master file too
         public void Export(Clip master, IList<Clip> clips, TextWriter output)
         {
             var completeList = new List<Clip>();
             completeList.Add(master);
             completeList.AddRange(clips);
             
-            offsetAdjustment = FindOffsetAdjustment(completeList);
+            CalculateAdjustments(completeList);
             
             XmlWriterSettings settings = new XmlWriterSettings
             {
                 Indent = true,
                 IndentChars = ("    "),
                 CloseOutput = true,
+                Encoding = Encoding.UTF8,
                 OmitXmlDeclaration = false
             };
 
@@ -56,9 +59,10 @@ namespace auxmic.editorExport
         }
 
         // Figure out the "left most" track so we get the track offsets correct in the NLE.
-        private double FindOffsetAdjustment(List<Clip> completeList)
+        private void CalculateAdjustments(List<Clip> completeList)
         {
             double leftMost = 0;
+            double rightMost = 0;
             for (int i = 0; i < completeList.Count; i++)
             {
                 var clip = completeList[i];
@@ -66,9 +70,19 @@ namespace auxmic.editorExport
                 {
                     leftMost = clip.Offset.TotalMilliseconds;
                 }
+
+                var clipDurationInMilliseconds = clip.DataLength / clip.WaveFormat.SampleRate * 1000;
+                if (clip.Offset.TotalMilliseconds + clipDurationInMilliseconds > rightMost)
+                {
+                    rightMost = clip.Offset.TotalMilliseconds + clipDurationInMilliseconds;
+                }
             }
+
+            // rightMost = rightMost + Math.Abs(leftMost);
             // double leftMost = completeList.Select(clip => clip.Offset.TotalMilliseconds).Prepend(0).Min();
-            return leftMost;
+
+            totalDurationSeconds = (rightMost + Math.Abs(leftMost)) / 1000;
+            offsetAdjustmentMilliseconds = leftMost;
         }
 
         private void WriteStartVideoTracks(XmlWriter videoWriter)
@@ -101,7 +115,7 @@ namespace auxmic.editorExport
 
         private int FinalCutOffset(double offsetMilliseconds)
         {
-            var offsetMillis = (offsetMilliseconds - offsetAdjustment);
+            var offsetMillis = (offsetMilliseconds - offsetAdjustmentMilliseconds);
             return (int) ((offsetMillis / 1000) * timebase);
         }
 
@@ -110,10 +124,7 @@ namespace auxmic.editorExport
             writer.WriteStartElement("sequence");
             writer.WriteElementString("name", "Sequence 1");
 
-            var trackDuration = FinalCutDuration(clip)
-                                + Math.Abs(FinalCutOffset(0));
-
-            writer.WriteElementString("duration", trackDuration.ToString());
+            writer.WriteElementString("duration", (totalDurationSeconds * timebase).ToString());
             
             WriteRate(writer);
             writer.WriteElementString("in", "-1");
