@@ -3,24 +3,72 @@ using System.Windows.Controls;
 using Microsoft.Win32;
 using System.IO;
 using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using auxmic.sync;
 using auxmic.editorExport;
+using auxmic.logging;
 
 namespace auxmic.ui
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, AuxMicLog
     {
-        public ClipSynchronizer _clipSynchronizer;
+        private ClipSynchronizer _clipSynchronizer;
+        private RollingLogFile _rollingLogFile;
 
         public MainWindow()
         {
             InitializeComponent();
+            SetupUnhandledExceptionHandling();
+            SetupLogging();
         }
 
+        private void SetupLogging()
+        {
+            // Keep no more than 2 log files each 5mb large
+            int MaxLogCount = 2;
+            int MaxLogSize = 1024 * 1024 * 5;
+            string folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string appName = Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]);
+
+            _rollingLogFile = new RollingLogFile(folder, appName, MaxLogCount, MaxLogSize);
+        }
+
+        private void SetupUnhandledExceptionHandling()
+        {
+            // Catch exceptions from all threads in the AppDomain.
+            AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+            {
+                ShowUnhandledException(args.ExceptionObject as Exception, "AppDomain.CurrentDomain.UnhandledException");
+            };
+            // Catch exceptions from each AppDomain that uses a task scheduler for async operations.
+            TaskScheduler.UnobservedTaskException += (sender, args) =>
+            {
+                args.SetObserved();
+                ShowUnhandledException(args.Exception, "TaskScheduler.UnobservedTaskException");
+            };
+            // Catch exceptions from a single specific UI dispatcher thread.
+            Dispatcher.UnhandledException += (sender, args) =>
+            {
+                // If we are debugging, let Visual Studio handle the exception and take us to the code that threw it.
+                if (!Debugger.IsAttached)
+                {
+                    args.Handled = true;
+                    ShowUnhandledException(args.Exception, "Dispatcher.UnhandledException");
+                }
+            };
+        }
+
+        void ShowUnhandledException(Exception e, string unhandledExceptionType)
+        {
+            Log($"An Unexpected {unhandledExceptionType} Error Occurred: {e.Message}", e);
+        }
+        
         private void MasterPanel_Drop(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -42,6 +90,7 @@ namespace auxmic.ui
             }
             catch (Exception ex)
             {
+                Log("ERROR: " + ex.Message, ex);
                 MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK);
             }
         }
@@ -84,6 +133,7 @@ namespace auxmic.ui
                 }
                 catch (Exception ex)
                 {
+                    Log("Failed to add file: " + ex.Message, ex);
                     MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK);
                 }
             }
@@ -91,11 +141,13 @@ namespace auxmic.ui
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            _clipSynchronizer = new ClipSynchronizer();
+            _clipSynchronizer = new ClipSynchronizer(this);
 
             // Очищаем списки, т.к. для отображения разметки в конструкторе форм добавлена строка
             HQItems.Items.Clear();
             LQItems.Items.Clear();
+            Logging.Items.Clear();
+            Log("Welcome to AuxMic. Please select files to synchronise.");
 
             HQItems.ItemsSource = _clipSynchronizer.MasterClips;
             LQItems.ItemsSource = _clipSynchronizer.LQClips;
@@ -170,7 +222,8 @@ namespace auxmic.ui
                 MessageBox.Show("Full path to FFmpeg executable file `ffmpeg.exe` not set. Open `File-Options` dialog to set it.", "FFmpeg not set", MessageBoxButton.OK);
                 return;
             }
-            else if (!File.Exists(ffmpegExePath))
+
+            if (!File.Exists(ffmpegExePath))
             {
                 MessageBox.Show("Full path to FFmpeg executable file `ffmpeg.exe` not found. Open `File-Options` dialog to set it.", "FFmpeg not found", MessageBoxButton.OK);
                 return;
@@ -196,7 +249,7 @@ namespace auxmic.ui
                 var duration = Math.Min(durationHQ, durationLQ);
                 
                 // export media
-                FFmpegTool ffmpeg = new FFmpegTool(ffmpegExePath);
+                FFmpegTool ffmpeg = new FFmpegTool(ffmpegExePath, this);
                 ffmpeg.Export(
                     clip.Filename, 
                     _clipSynchronizer.Master.Filename,
@@ -205,8 +258,6 @@ namespace auxmic.ui
                     saveFileDialog.FileName,
                     duration);
             }
-
-            //MessageBox.Show("Synced video exported.", "File exported", MessageBoxButton.OK);
         }
 
         private void cmd_AddMaster(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
@@ -256,15 +307,37 @@ namespace auxmic.ui
             options.Owner = this;
             options.ShowDialog();
         }
+        
+        private void CtrlCCopyCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            ListView lb = (ListView)(sender);
+            SetClipboard(lb.SelectedItem);
+        }
+
+        private void RightClickCopyCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            SetClipboard(((MenuItem)sender).DataContext);
+        }
+
+        private void SetClipboard(Object selected)
+        {
+            // Specifically using this Clipboard class, and SetDataObject, as System.Windows.Clipboard
+            // has no retry logic and we were regularly getting "OpenClipboard Failed (0x800401D0 (CLIPBRD_E_CANT_OPEN))"
+            if (selected != null) System.Windows.Forms.Clipboard.SetDataObject(selected.ToString());
+        }
 
         private void cmd_ExportFinalCutPro(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
         {
-            using StreamWriter sw = new StreamWriter(this._clipSynchronizer.Master.Filename + "_fcp7.xml");
+            string projectFilename = this._clipSynchronizer.Master.Filename + "_fcp7.xml";
+            using StreamWriter sw = new StreamWriter(projectFilename);
             
             FinalCutProExporter exporter = new FinalCutProExporter(new MediaTool());
             
             exporter.Export(this._clipSynchronizer.Master,
                             this._clipSynchronizer.LQClips, sw);
+            
+            Log("Final Cut Pro 7 Project file written to...");
+            Log(projectFilename);
         }
         
         private void cmd_OpenCacheFolder(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
@@ -279,6 +352,26 @@ namespace auxmic.ui
             if (result == MessageBoxResult.OK)
             {
                 _clipSynchronizer.ClearCache();
+            }
+        }
+
+        public void Log(string message, Exception e = null)
+        {
+            // Update the UI
+            this.Dispatcher.Invoke(() =>
+            {
+                Logging.Items.Add(message);
+                Logging.ScrollIntoView(message);
+            });
+
+            // Update the disk file
+            try
+            {
+                _rollingLogFile.Log(message, e);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Failed to write to log file " + ex.Message);
             }
         }
     }

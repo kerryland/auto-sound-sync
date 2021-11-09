@@ -3,7 +3,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Xml;
 using System.Xml.Linq;
 using auxmic.editorExport;
 using auxmic.sync;
