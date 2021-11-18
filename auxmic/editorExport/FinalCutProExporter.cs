@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Xml;
-using NAudio.Wave;
 
 namespace auxmic.editorExport
 {
@@ -143,13 +142,13 @@ namespace auxmic.editorExport
             writer.WriteStartElement("sequence");
             writer.WriteElementString("name", "Sequence 1");
 
-            writer.WriteElementString("duration", (totalDurationSeconds * timebase).ToString());
+            writer.WriteElementString("duration", (totalDurationSeconds * timebase).ToString(CultureInfo.InvariantCulture));
             
             WriteRate(writer);
             writer.WriteElementString("in", "-1");
             writer.WriteElementString("out", "-1");
 
-            WriteTimecode(writer, "90000");  // TODO: What is this? clip.???
+            WriteTimecode(writer);
             
             writer.WriteStartElement("media");
         }
@@ -186,7 +185,7 @@ namespace auxmic.editorExport
             writer.WriteElementString("pathurl", "file://" + clip.Filename.Replace("\\", "/"));
 
             //------------- timecode --------------
-            WriteTimecode(writer, "0");
+            WriteTimecode(writer);
 
             //------------- media --------------------
             writer.WriteStartElement("media");
@@ -224,7 +223,7 @@ namespace auxmic.editorExport
             writer.WriteEndElement(); // samplecharacteristics
         }
 
-        private void WriteTimecode(XmlWriter writer, string frame)
+        private void WriteTimecode(XmlWriter writer)
         {
             writer.WriteStartElement("timecode");
             writer.WriteElementString("displayformat", "NDF");
@@ -256,9 +255,9 @@ namespace auxmic.editorExport
             writer.WriteElementString("duration", duration.ToString());
         }
 
-        private static int FinalCutDuration(Clip clip)
+        private static long FinalCutDuration(Clip clip)
         {
-            int duration = clip.DataLength / clip.WaveFormat.SampleRate * timebase;
+            long duration = clip.DataLength / clip.WaveFormat.SampleRate * timebase;
             return duration;
         }
 

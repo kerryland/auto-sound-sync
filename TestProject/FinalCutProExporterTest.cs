@@ -63,13 +63,14 @@ namespace TestProject
 
         private static void PerformTest(string masterFilename, bool masterIsVideo, string expectedXmlFile)
         {
+            var log = new ConsoleLogger();
             SimpleFingerPrinter fingerPrinter = new SimpleFingerPrinter();
 
             SimpleSoundFile masterSoundFile = new SimpleSoundFile()
                 .WithWaveFormat(new WaveFormat(48000, 2))
                 .WithDurationInSeconds(30 * 60);
 
-            Clip master = new Clip(masterFilename, fingerPrinter, new SimpleSoundFileFactory(masterSoundFile));
+            Clip master = new Clip(masterFilename, fingerPrinter, log, new SimpleSoundFileFactory(masterSoundFile));
             master.LoadFile();
 
             SimpleSoundFile clip1SoundFile = new SimpleSoundFile()
@@ -84,9 +85,9 @@ namespace TestProject
                 .WithWaveFormat(new WaveFormat(48000, 2))
                 .WithDurationInSeconds(14 * 60);
 
-            var clip1 = new Clip("clip01.mp4", fingerPrinter, new SimpleSoundFileFactory(clip1SoundFile));
-            var clip2 = new Clip("clip02.mp4", fingerPrinter, new SimpleSoundFileFactory(clip2SoundFile));
-            var clip3 = new Clip("clip03.mp4", fingerPrinter, new SimpleSoundFileFactory(clip3SoundFile));
+            var clip1 = new Clip("clip01.mp4", fingerPrinter, log, new SimpleSoundFileFactory(clip1SoundFile));
+            var clip2 = new Clip("clip02.mp4", fingerPrinter, log,new SimpleSoundFileFactory(clip2SoundFile));
+            var clip3 = new Clip("clip03.mp4", fingerPrinter, log,new SimpleSoundFileFactory(clip3SoundFile));
 
             clip1.LoadFile();
             clip2.LoadFile();
