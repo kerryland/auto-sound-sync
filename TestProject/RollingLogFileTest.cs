@@ -13,7 +13,7 @@ namespace TestProject
         private readonly string folder = Path.GetTempPath() + "auxtest-" + Guid.NewGuid().ToString();
 
         private static int
-            PADDING = 32; // Each line is prefixed with a timestamp, and suffixed with EOL that adds 32 characters
+            PADDING = 23; // Each line is prefixed with a timestamp, and suffixed with EOL that adds 32 characters
 
         [TestInitialize()]
         public void MyTestInitialize()

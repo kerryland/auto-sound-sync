@@ -9,9 +9,12 @@ namespace auxmic.logging
         private readonly string _logfilePrefix;
         private readonly int _maxLogCount;
         private readonly int _maxLogSizeBytes;
-        private readonly string _logfilename;
-        private readonly FileInfo _logfileInfo;
         
+        private long currentLogfileSize;
+        private static long LENGTH_OF_DATE_AND_EOL = 23;
+        
+        public string LogFilename { get; }
+
         private static readonly object logLock = new object();
 
         /// <summary>
@@ -28,35 +31,46 @@ namespace auxmic.logging
             _logfilePrefix = logfilePrefix;
             _maxLogCount = maxLogCount;
             _maxLogSizeBytes = maxLogSizeBytes;
-            _logfilename = $"{_folder}{Path.DirectorySeparatorChar}{_logfilePrefix}.log";
-            _logfileInfo = new FileInfo(_logfilename);
-        }
-        
-        public void Log(string message, Exception e = null)
-        {
-            lock (logLock)
+            LogFilename = $"{_folder}{Path.DirectorySeparatorChar}{_logfilePrefix}.log";
+            FileInfo _logfileInfo = new FileInfo(LogFilename);
+            if (_logfileInfo.Exists)
             {
+                currentLogfileSize = _logfileInfo.Length;
+            }
+        }
+       
+        public void Log(string message, Exception e = null)
+        { 
+            while (e != null)
+            {
+                message += Environment.NewLine + e.Message + ": " + Environment.NewLine + e.StackTrace;
+                e = e.InnerException;
                 if (e != null)
                 {
-                    message += Environment.NewLine + e.StackTrace;
+                    message += Environment.NewLine + "-----" + Environment.NewLine;
                 }
+            }
+   
+            lock (logLock)
+            {
+                RollLogs(message.Length);
 
-                _logfileInfo.Refresh();
-                RollLogs(_logfileInfo, message.Length);
-
-                using StreamWriter logWriter = _logfileInfo.AppendText();
-                logWriter.WriteLine($"{DateTime.Now:r} {message}");
+                currentLogfileSize += message.Length + LENGTH_OF_DATE_AND_EOL;
+                    
+                using StreamWriter logWriter = new StreamWriter(LogFilename, append: true);
+                logWriter.WriteLine($"{DateTime.Now:u} {message}");
                 logWriter.Close();
             }
         }
 
-        private void RollLogs(FileInfo logfileInfo, int moreBytes)
+        private void RollLogs(int moreBytes)
         {
-            if (!logfileInfo.Exists || (logfileInfo.Length + moreBytes < _maxLogSizeBytes))
+            if (currentLogfileSize + moreBytes < _maxLogSizeBytes)
             {
                 return;
             }
-            logfileInfo.Refresh();
+
+            currentLogfileSize = 0;
 
             for (int fileCounter = _maxLogCount - 1; fileCounter >= 0; fileCounter--)
             {
@@ -78,7 +92,7 @@ namespace auxmic.logging
         {
             if (fileCounter == 0)
             {
-                return _logfilename;
+                return LogFilename;
             }
 
             return $"{_folder}{Path.DirectorySeparatorChar}{_logfilePrefix}-{fileCounter:00}.log";
