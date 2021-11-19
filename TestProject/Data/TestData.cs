@@ -4,6 +4,16 @@ namespace TestProject
 {
     internal class TestData
     {
+        internal static string Filename(string filename)
+        {
+            // Figure out where the test data is (tests didn't run reliably in JetBrains Rider)
+            string knownPath = @"\TestProject\";
+            int knownPart = Environment.CurrentDirectory.IndexOf(knownPath);
+            String dataFolder = Environment.CurrentDirectory.Remove(knownPart + knownPath.Length) + @"Data\";
+            return dataFolder + filename;
+        }
+        
+        
         internal static Int32[] dtmf_1to0 = { 
                             128, 129, 130, 130, 128, 126, 125, 127, 128, 127, 123, 121, 123, 132, 
                             142, 146, 139, 125, 113, 110, 118, 128, 133, 130, 125, 127, 137, 149, 

@@ -81,24 +81,14 @@ namespace TestProject
             CollectionAssert.AreEqual(expected, actual);
         }
         
-        private static string Filename(string filename)
-        {
-            // Figure out where the test data is (tests didn't run reliably in JetBrains Rider)
-            string knownPath = @"\TestProject\";
-            int knownPart = Environment.CurrentDirectory.IndexOf(knownPath);
-            String dataFolder = Environment.CurrentDirectory.Remove(knownPart + knownPath.Length) + @"Data\";
-            return dataFolder + filename;
-        }
-
-
         private static void ReadFile(string testData, out Int32[] actual, out Int32[] expected, Int32[] fileData)
         {
-            string filename = Filename(testData);
+            string filename = TestData.Filename(testData);
 
             WaveFormat resampleFormat = null;
             
             // This constructor also create a wave file
-            SoundFile soundFile = new SoundFile(filename, resampleFormat);
+            SoundFile soundFile = new SoundFile(filename);
             
             // Now read the new wave file and see if it contains what we expect it to
             using (var waveFileReader = new WaveFileReader(soundFile.TempFilename)) 

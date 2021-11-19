@@ -1,4 +1,5 @@
-﻿using SoundFingerprinting;
+﻿using auxmic.mediaUtil;
+using SoundFingerprinting;
 using SoundFingerprinting.Audio;
 using SoundFingerprinting.Builder;
 using SoundFingerprinting.Configuration;
@@ -10,19 +11,27 @@ namespace auxmic.sync
     /*
      * Create FingerPrints using https://github.com/AddictedCS/soundfingerprinting
      *
-     * This should only be used for small files because it get steadily less accurate.
+     * This should only be used for small files because it get steadily less accurate. Allegedly.
      *
-     * I will eventually replace this with FFmepgFingerPrinter.
+     * See also FFmpegFingerPrinter which uses code from the same developer, but is faster and closed source.
      */
     public class SoundFingerprinter : IFingerprinter
     {
+        public static FFmpegTool _launcher;
+
         private readonly IAudioService audioService = new SoundFingerprintingAudioService(); // default audio library
         
         public object CreateFingerPrints(Clip clip)
         {
             ISoundFile soundFile = clip.SoundFile;
 
-            // This also builds the .wav file automatically if it doesn't exist.
+            // if wave file already exists, do not create it again
+            if (!FileCache.Exists(soundFile.TempFilename))
+            {
+                // TODO: Use clip.MasterWaveFormat not hardcoded 2 and 48000
+                _launcher.ExecuteFFmpeg("-i " + clip.Filename + " -f wav -ac 2 -ar 48000 " + soundFile.TempFilename);
+            }
+            
             return FingerprintCommandBuilder.Instance
                 .BuildFingerprintCommand()
                 .From(soundFile.TempFilename)
