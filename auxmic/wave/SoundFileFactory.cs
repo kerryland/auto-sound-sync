@@ -6,7 +6,7 @@ namespace auxmic
     {
         public ISoundFile CreateSoundFile(string filename, WaveFormat resampleFormat)
         {
-            return new SoundFile(filename, resampleFormat);
+            return new SoundFile(filename);
         }
     }
 }

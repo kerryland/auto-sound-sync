@@ -33,11 +33,11 @@ namespace TestProject
             }
         }
 
-        public int DataLength { get; private set; }
+        public long DataLength { get; set; }
 
         public WaveFormat WaveFormat { get; set; }
 
-        public long Length { get; private set; }
+        public long Length { get; set; }
 
         public string Filename { get; set; }
         
