@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using auxmic.fft;
 using auxmic.sync;
+using auxmic.wave;
 using NAudio.Wave;
 
 namespace auxmic
@@ -18,6 +20,8 @@ namespace auxmic
      */
     public class AuxMicFingerprinter : IFingerprinter
     {
+        public static FingerprintStreamProvider FingerprintStreamProvider;
+        
         private SyncParams _syncParams = new SyncParams
         {
             L = 256,
@@ -39,37 +43,47 @@ namespace auxmic
         private Int32[] GetHashes(Clip clip)
         {
             ISoundFile soundFile = clip.SoundFile;
-            string waveFile = soundFile.TempFilename;
-
+            
             if (FileCache.Contains(GetCachedFilename(clip)))
             {
                 clip.ReportProgress(clip.MaxProgressValue);
-
                 return FileCache.Get<Int32[]>(GetCachedFilename(clip));
             }
 
-            int L = _syncParams.L;
-            long N = soundFile.DataLength;
+            Int32[] hashes;
 
-            int ranges = (int) Math.Ceiling(((decimal) (L / 2) / _syncParams.FreqRangeStep));
-
-            Int32[] hashes = new Int32[N / L];
-
-            clip.MaxProgressValue = hashes.Length;
-
-            int row = 0;
-
-            // перебираем все данные по т.н. окнам
-            // Loop through all the data in the "window"
-            using (var reader = new WaveFileReader(waveFile))
+            using (var wavReader = FingerprintStreamProvider.GetStream(clip))
             {
+                // Silly nAudio WaveStream thinks it can call .Length and set Position 
+                // on the underlying stream. That won't work, so here's a lightweight
+                // alternative that just reads what we need out of the header
+                WAV_file wavFile = new WAV_file();
+                wavFile.loadFile(wavReader);
+                
+                soundFile.WaveFormat = new WaveFormat((int) wavFile.SampleRate, 
+                    (int)wavFile.BitsPerSample,
+                    (int)wavFile.NumOfChannels);
+
+                int L = _syncParams.L;
+                long N = soundFile.DataLength;
+
+                int ranges = (int) Math.Ceiling(((decimal) (L / 2) / _syncParams.FreqRangeStep));
+
+                hashes = new Int32[N / L];
+
+                clip.MaxProgressValue = hashes.Length;
+
+                int row = 0;
+
+                // перебираем все данные по т.н. окнам
+                // Loop through all the data in the "window"
                 for (int i = 0; i <= N - L; i += L)
                 {
                     clip.CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                     // читаем необходимое количество данных из левого канала в "окно"
                     // read a piece of the sound file for processing as a window
-                    Complex[] segment = ReadComplex(reader,soundFile.WaveFormat, L);
+                    Complex[] segment = ReadComplex(wavReader, soundFile.WaveFormat, L);
 
                     // применяем оконную функцию через делегат
                     // apply a window function via a delegate
@@ -129,7 +143,7 @@ namespace auxmic
         /// </summary>
         /// <param name="samplesToRead"></param>
         /// <returns></returns>
-        internal Complex[] ReadComplex(WaveFileReader fileReader, WaveFormat waveFormat, int samplesToRead)
+        private Complex[] ReadComplex(Stream fileReader, WaveFormat waveFormat, int samplesToRead)
         {
             Complex[] result = new Complex[samplesToRead];
 
@@ -261,9 +275,7 @@ namespace auxmic
                         startIndex = indexHQ;
                         matchLQ = indexLQ;
                         matchOffset = offset;
-                        ;
                     }
-
                     Monitor.Exit(this);
 
                     lqClip.ReportProgress(progressCount++);
@@ -300,10 +312,9 @@ namespace auxmic
                 clip.WaveFormat.SampleRate);
         }
 
-
         public void Cleanup(Clip clip)
         {
-            // Remove hashed data
+            // Remove hashed fingerprint data
             FileCache.Remove(GetCachedFilename(clip));
         }
     }
