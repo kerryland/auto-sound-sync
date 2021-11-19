@@ -5,15 +5,13 @@ using SoundFingerprinting.Audio;
 using SoundFingerprinting.Builder;
 using SoundFingerprinting.Configuration;
 using SoundFingerprinting.Data;
-using SoundFingerprinting.InMemory;
 using SoundFingerprinting.Emy;
+using SoundFingerprinting.InMemory;
 
 namespace auxmic.sync
 {
     /*
-     * Create FingerPrints using FFmpegAudioService https://github.com/AddictedCS/soundfingerprinting
-     *
-     * THIS WILL REPLACE SoundFingerPrinter
+     * Create FingerPrints using "Emy" FFmpegAudioService https://github.com/AddictedCS/soundfingerprinting
      */
     public class FFmpegFingerprinter : IFingerprinter
     {
@@ -21,6 +19,7 @@ namespace auxmic.sync
         
         public object CreateFingerPrints(Clip clip)
         {
+            // TODO: Handle better
             Debug.WriteLine("Put ffmpeg into " + Environment.CurrentDirectory + "/bin/" + (Environment.Is64BitProcess ? "x64" : "x86"));
             // or set ffmpeg.RootPath = path using FFmpeg.AutoGen; ;
 
