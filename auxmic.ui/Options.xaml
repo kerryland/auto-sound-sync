@@ -67,6 +67,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -81,9 +82,43 @@
                
                 <ComboBox Grid.Row="1"  Grid.Column="1" x:Name="synchronizer" 
                           SelectedItem="{Binding Synchronizer}"                          
-                          ItemsSource="{Binding Path=Synchronizers}"    
+                          ItemsSource="{Binding Path=Synchronizers}" 
                           Margin="5,0,5,0" >
-                 
+                </ComboBox>
+                
+                <TextBlock Grid.Row="2" Grid.Column="0" x:Name="waveLabel" DockPanel.Dock="Top" 
+                           Text="WAVE Provider (AuxMic Synchronizer)" VerticalAlignment="Center" Padding="5,5,0,5">
+                    <TextBlock.Style>
+                        <Style>
+                            <Setter Property="TextBlock.Visibility" Value="Hidden" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ElementName = synchronizer, Path = Text}"
+                                             Value="AuxMic">
+                                    <Setter Property="TextBlock.Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>        
+                           
+                </TextBlock>
+                <ComboBox Grid.Row="2" Grid.Column="1" x:Name="waveProvider"
+                          SelectedItem="{Binding Path=WaveProvider}"
+                          ItemsSource="{Binding Path=WaveProviders}"
+                          Margin="5,0,5,0">
+                    <ComboBox.Style>
+                        <Style>
+                            <Setter Property="ComboBox.IsReadOnly" Value="True" />
+                            <Setter Property="ComboBox.Visibility" Value="Hidden" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ElementName = synchronizer, Path = Text}"
+                                             Value="AuxMic">
+                                    <Setter Property="ComboBox.IsReadOnly" Value="False" />
+                                    <Setter Property="ComboBox.Visibility" Value="Visible" />
+                                </DataTrigger>
+                               
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Style>
                 </ComboBox>
             </Grid>
         </Border>
@@ -100,8 +135,8 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="1" Width="60" HorizontalAlignment="Center" Template="{StaticResource ButtonTemplate}" Margin="5" Background="Blue" Click="btn_Save" Content="Save"/>
-                <Button Grid.Column="2" Width="60" HorizontalAlignment="Center" Template="{StaticResource ButtonTemplate}" Margin="5" Background="Blue" Click="btn_Cancel" Content="Cancel"/>
+                <Button Grid.Column="1" Width="60" HorizontalAlignment="Center" Template="{StaticResource ButtonTemplate}" Margin="5" Background="Blue" Click="btn_Save" Content="Save" IsDefault="True"/>
+                <Button Grid.Column="2" Width="60" HorizontalAlignment="Center" Template="{StaticResource ButtonTemplate}" Margin="5" Background="Blue" Click="btn_Cancel" Content="Cancel" IsCancel="True"/>
             </Grid>
         </Border>
 

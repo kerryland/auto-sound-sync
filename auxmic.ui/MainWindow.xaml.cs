@@ -10,6 +10,7 @@ using System.Windows.Input;
 using auxmic.sync;
 using auxmic.editorExport;
 using auxmic.logging;
+using auxmic.mediaUtil;
 
 namespace auxmic.ui
 {
@@ -20,6 +21,7 @@ namespace auxmic.ui
     {
         private ClipSynchronizer _clipSynchronizer;
         private RollingLogFile _rollingLogFile;
+        private FFmpegTool _launcher;
 
         public MainWindow()
         {
@@ -87,6 +89,8 @@ namespace auxmic.ui
             {
                 var fingerprinter = chooseFingerprinter();
                 _clipSynchronizer.SetMaster(files[0], fingerprinter);
+    
+                Configure();
             }
             catch (Exception ex)
             {
@@ -99,18 +103,53 @@ namespace auxmic.ui
         {
             IFingerprinter fingerprinter;
 
-            if ("AuxMic" == Properties.Settings.Default.SYNCHRONIZER)
+            switch (Properties.Settings.Default.SYNCHRONIZER)
             {
-                fingerprinter = new AuxMicFingerprinter();
-            }
-            else
-            {
-                fingerprinter = new SoundFingerprinter();
+                case "AuxMic":
+                    fingerprinter = new AuxMicFingerprinter();
+                    break;
+                case "Emy":
+                    fingerprinter = new FFmpegFingerprinter();
+                    break;
+                case "SoundFingerprinting":
+                    fingerprinter = new SoundFingerprinter();
+                    break;
+                default:
+                    throw new ApplicationException($"SYNCHRONIZER property has illegal value {Properties.Settings.Default.SYNCHRONIZER}");
             }
 
             return fingerprinter;
         }
 
+        private void Configure()
+        {
+            // TODO: Do some proper dependency injection
+            _launcher = new FFmpegTool(this, Properties.Settings.Default.FFMPEG_EXE_PATH);
+            
+            FFmpegTool.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
+            VideoWave.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
+            VideoWave.Log = this;
+
+            SoundFingerprinter._launcher = _launcher;
+
+            switch (Properties.Settings.Default.WAVE_PROVIDER)
+            {
+                case "NAudio":
+                    AuxMicFingerprinter.FingerprintStreamProvider = new NaudioWavefile();
+                    break;
+                case "FFMpeg":
+                    AuxMicFingerprinter.FingerprintStreamProvider = new FFmpegWaveFile(_launcher);
+                    break;
+                case "Pipe":
+                    AuxMicFingerprinter.FingerprintStreamProvider = new PipedWaveProvider();
+                    break;
+                default:
+                    throw new ApplicationException(
+                        $"WAVE_PROVIDER has an illegal value: {Properties.Settings.Default.WAVE_PROVIDER}");
+            }
+        }
+        
+        
         private void LQItems_Drop(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -147,7 +186,8 @@ namespace auxmic.ui
             HQItems.Items.Clear();
             LQItems.Items.Clear();
             Logging.Items.Clear();
-            Log("Welcome to AuxMic. Please select files to synchronise.");
+            Log($"Log file at {_rollingLogFile.LogFilename}");
+            Log("Welcome to AuxMic. Please select files to synchronize");
 
             HQItems.ItemsSource = _clipSynchronizer.MasterClips;
             LQItems.ItemsSource = _clipSynchronizer.LQClips;
@@ -249,7 +289,7 @@ namespace auxmic.ui
                 var duration = Math.Min(durationHQ, durationLQ);
                 
                 // export media
-                FFmpegTool ffmpeg = new FFmpegTool(ffmpegExePath, this);
+                VideoExporter ffmpeg = new VideoExporter(_launcher);
                 ffmpeg.Export(
                     clip.Filename, 
                     _clipSynchronizer.Master.Filename,
@@ -257,6 +297,8 @@ namespace auxmic.ui
                     clip.MatchResult.TrackMatchStartsAt,
                     saveFileDialog.FileName,
                     duration);
+
+                Log($"Clip exported to {saveFileDialog.FileName}");
             }
         }
 
@@ -305,7 +347,12 @@ namespace auxmic.ui
         {
             Options options = new Options();
             options.Owner = this;
-            options.ShowDialog();
+            if (options.ShowDialog() == true)
+            {
+                Log("Changing Options Resets the UI");
+                _clipSynchronizer.ClearCache();
+                Configure();    
+            }
         }
         
         private void CtrlCCopyCmdExecuted(object sender, ExecutedRoutedEventArgs e)

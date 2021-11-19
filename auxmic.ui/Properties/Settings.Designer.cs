@@ -46,5 +46,17 @@ namespace auxmic.ui.Properties {
                 this["SYNCHRONIZER"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("NAudio")]
+        public string WAVE_PROVIDER {
+            get {
+                return ((string)(this["WAVE_PROVIDER"]));
+            }
+            set {
+                this["WAVE_PROVIDER"] = value;
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="auxmic.ui.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
@@ -8,5 +8,9 @@
     <Setting Name="SYNCHRONIZER" Type="System.String" Scope="User">
       <Value Profile="(Default)">SoundFingerprinting</Value>
     </Setting>
+    <Setting Name="WAVE_PROVIDER" Type="System.String" Scope="User">
+      <Value Profile="(Default)">NAudio</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
+
