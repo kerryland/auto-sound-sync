@@ -3,6 +3,7 @@ using NAudio.MediaFoundation;
 
 namespace auxmic.editorExport
 {
+    // TODO: Move to mediaUtil package
     public class MediaTool : IMediaTool
     {
         public bool IsVideo(string filename)
