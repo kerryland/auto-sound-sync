@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using auxmic.logging;
 using auxmic.sync;
 
 using WaveFormat = NAudio.Wave.WaveFormat;
@@ -17,6 +18,7 @@ namespace auxmic
         #region PROPERTIES & FIELDS
 
         private readonly IFingerprinter _fingerprinter;
+        private readonly AuxMicLog _log;
 
         public IFingerprinter Fingerprinter => _fingerprinter;
 
@@ -25,7 +27,7 @@ namespace auxmic
         /// <summary>
         /// Формат мастер-записи к которому надо ресемплировать остальные файлы для дальнейшей работы с ними.
         /// </summary>
-        private readonly WaveFormat _resampleFormat;
+        private readonly WaveFormat _masterWaveFormat;
 
         internal readonly CancellationTokenSource CancellationTokenSource = new CancellationTokenSource();
 
@@ -216,7 +218,7 @@ namespace auxmic
         ///
         /// Number of data samples
         /// </summary>
-        internal int DataLength
+        internal long DataLength
         {
             get
             {
@@ -272,6 +274,8 @@ namespace auxmic
                 return this.SoundFile.WaveFormat;
             }
         }
+
+        public WaveFormat MasterWaveFormat => _masterWaveFormat;
 
         /// <summary>
         /// Controls if there will be button to export synchronized result.
@@ -347,14 +351,15 @@ namespace auxmic
         /// <param name="filename">Filename to load</param>
         /// <param name="fingerprinter"></param>
         /// <param name="soundFileFactory">An interface that can provide information about a soundfile</param>
-        /// <param name="resampleFormat">Resample format. If not set (null) - will not resample.</param>
-        internal Clip(string filename, IFingerprinter fingerprinter, ISoundFileFactory soundFileFactory = null,
-            WaveFormat resampleFormat = null)
+        /// <param name="masterWaveFormat">Resample format. If not set (null) - will not resample.</param>
+        internal Clip(string filename, IFingerprinter fingerprinter, AuxMicLog log, ISoundFileFactory soundFileFactory = null,
+            WaveFormat masterWaveFormat = null)
         {
             this.Filename = filename;
             _fingerprinter = fingerprinter;
+            _log = log;
             _soundFileFactory = soundFileFactory;
-            this._resampleFormat = resampleFormat;
+            this._masterWaveFormat = masterWaveFormat;
             SetProgressMax(); // TODO: Remove?
         }
 
@@ -373,7 +378,7 @@ namespace auxmic
 
             try
             {
-                this.SoundFile = _soundFileFactory.CreateSoundFile(this.Filename, this._resampleFormat);
+                this.SoundFile = _soundFileFactory.CreateSoundFile(this.Filename, this._masterWaveFormat);
                 // this.SoundFile = new SoundFile(this.Filename, this._resampleFormat);
             }
             catch (COMException ex)
@@ -412,11 +417,14 @@ namespace auxmic
         /// </summary>
         internal void CalcHashes()
         {
+            _log.Log($"{this._displayname} fingerprinting...");
+           
+            Hashes = _fingerprinter.CreateFingerPrints(this);
             SetProgressMax();
 
-            Hashes = _fingerprinter.CreateFingerPrints(this);
-        }
+            _log.Log($"{this._displayname} fingerprinting... Done");
 
+        }
 
         /// <summary>
         /// Starts synching with master record.

@@ -77,7 +77,7 @@ namespace TestProject
 
         private Clip BuildClip(string filename)
         { 
-            Clip clip = new Clip(dataFolder + filename, new AuxMicFingerprinter(), new SoundFileFactory());
+            Clip clip = new Clip(dataFolder + filename, new AuxMicFingerprinter(), new ConsoleLogger(), new SoundFileFactory());
             clip.LoadFile();
 
             return clip;
@@ -133,8 +133,8 @@ namespace TestProject
         {
             Clip target = BuildClip("dtmf_1to0.wav");
 
-            int expected = 19109;
-            int actual = target.DataLength;
+            long expected = 19109;
+            long actual = target.DataLength;
 
             Assert.AreEqual(expected, actual);
         }
@@ -144,8 +144,8 @@ namespace TestProject
         {
             Clip target = BuildClip("DSC_6785_48kHz_16bit_mono.wav");
 
-            int expected = 6130;
-            int actual = target.DataLength;
+            long expected = 6130;
+            long actual = target.DataLength;
 
             Assert.AreEqual(expected, actual);
         }
@@ -155,8 +155,8 @@ namespace TestProject
         {
             Clip target = BuildClip("master_48kHz_16bit_stereo.wav");
 
-            int expected = 60249;
-            int actual = target.DataLength;
+            long expected = 60249;
+            long actual = target.DataLength;
 
             Assert.AreEqual(expected, actual);
         }

@@ -43,7 +43,7 @@ namespace auxmic
                 this.MasterClips.Clear();
             }
 
-            this.Master = new Clip(masterFilename, fingerprinter, _soundFileFactory);
+            this.Master = new Clip(masterFilename, fingerprinter, Log, _soundFileFactory);
 
             // disable export button for high quality audio source
             this.Master.DisplayExportControls = false;
@@ -67,13 +67,18 @@ namespace auxmic
             //    т.к. при загрузке LQ-файлов может потребоваться их ресемплинг до мастер-записи,
             //    а он ещё не загрузился и свойство WaveFormat не доступно (== null)
             // 2. перед матчингом LQ-записей надо дождаться окончания хэширования мастер-записи
+            
+            // We use two separate tasks instead of a chain of tasks. This is necessary in order to:
+            // 1. wait for the master record to load before loading the LQ files. when loading LQ files,
+            //    they may need to be resampled before the master record, but it has not been loaded yet
+            //    and the WaveFormat property is not available (== null)
+            // 2.before matching LQ records, you must wait until the master record has been hashed
             _loadMasterTask = Task.Factory.StartNew(
                 () =>
                 {
                     try
                     {
                         Master.LoadFile();
-                        Log.Log($"{Master.DisplayName} loaded");
                     }
                     catch (Exception e)
                     {
@@ -113,7 +118,6 @@ namespace auxmic
                     try
                     {
                         Master.CalcHashes();
-                        Log.Log($"{Master.DisplayName} fingerprinted");
                     }
                     catch (Exception e)
                     {
@@ -153,6 +157,7 @@ namespace auxmic
 
             // ждём загрузки мастер-записи, т.к. для ресемплинга нам нужно знать его WaveFormat
             // waiting for the master record to load, because for resampling we need to know its WaveFormat
+            // TODO: Is this really true?
             _loadMasterTask.Wait();
             if (_loadMasterTask.Exception != null)
             {
@@ -161,7 +166,7 @@ namespace auxmic
                     _loadMasterTask.Exception);
             }
 
-            Clip clip = new Clip(LQfilename, this.Master.Fingerprinter, _soundFileFactory, this.Master.WaveFormat)
+            Clip clip = new Clip(LQfilename, this.Master.Fingerprinter, Log, _soundFileFactory, this.Master.WaveFormat)
             {
                 // enable export button for clip
                 DisplayExportControls = true
@@ -175,7 +180,6 @@ namespace auxmic
                     try
                     {
                         clip.LoadFile();
-                        Log.Log($"{clip.DisplayName} loaded");
                     }
                     catch (Exception e)
                     {
@@ -203,11 +207,10 @@ namespace auxmic
                         try
                         {
                             clip.CalcHashes();
-                            Log.Log($"{clip.DisplayName} fingerprinted");
                         }
                         catch (Exception e)
                         {
-                            Log.Log($"{clip.DisplayName} failed to fingerprint", e);
+                            Log.Log($"{clip.DisplayName} fingerprinting... FAILED", e);
                         }
                     },
                     clip.CancellationTokenSource.Token,
@@ -229,7 +232,9 @@ namespace auxmic
                         }
 
                         // запускаем синхронизацию
+                        Log.Log($"{clip.DisplayName} synchronizing...");
                         clip.Sync(this.Master);
+                        Log.Log($"{clip.DisplayName} synchronizing... Done");
                     },
                     clip.CancellationTokenSource.Token,
                     TaskContinuationOptions.LongRunning,
