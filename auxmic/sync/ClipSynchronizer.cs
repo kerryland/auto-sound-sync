@@ -211,6 +211,7 @@ namespace auxmic
                         catch (Exception e)
                         {
                             Log.Log($"{clip.DisplayName} fingerprinting... FAILED", e);
+                            
                         }
                     },
                     clip.CancellationTokenSource.Token,
@@ -232,12 +233,18 @@ namespace auxmic
                         }
 
                         // запускаем синхронизацию
-                        Log.Log($"{clip.DisplayName} synchronizing...");
-                        Stopwatch stopwatch = Stopwatch.StartNew();
-                        clip.Sync(this.Master);
-                        stopwatch.Stop();
-                        Log.Log($"{clip.DisplayName} synchronizing... Done in {stopwatch.Elapsed.TotalMilliseconds}");
-                        // Log.Log($"{clip.DisplayName} synchronizing... Done");
+                        try
+                        {
+                            Log.Log($"{clip.DisplayName} synchronizing...");
+                            Stopwatch stopwatch = Stopwatch.StartNew();
+                            clip.Sync(this.Master);
+                            stopwatch.Stop();
+                            Log.Log($"{clip.DisplayName} synchronizing... Done in {stopwatch.Elapsed.TotalMilliseconds}");
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Log($"{clip.DisplayName} synchronizing... FAILED", e);
+                        }
                     },
                     clip.CancellationTokenSource.Token,
                     TaskContinuationOptions.LongRunning,

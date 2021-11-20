@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
+using System.Text;
 using auxmic.logging;
 
 namespace auxmic.mediaUtil
@@ -30,60 +29,66 @@ namespace auxmic.mediaUtil
                 throw new ApplicationException(
                     "Full path to FFmpeg executable file `ffmpeg.exe` is not set or not correct.");
             }
-            var queue = new ConcurrentQueue<string>();
 
-            var flushTask = new System.Timers.Timer(50);
-            flushTask.Elapsed += (s, e) =>
-            {
-                while (!queue.IsEmpty)
-                {
-                    string line = null;
-                    if (queue.TryDequeue(out line))
-                        Log.Log(line);
-                }
-            };
-            flushTask.Start();
-
+            StringBuilder sout = new StringBuilder();
             using var process = new Process();
             try
             {
                 process.StartInfo.FileName = $"\"{PathToFFmpegExe}\"";
                 process.StartInfo.Environment["AV_LOG_FORCE_NOCOLOR"] = "TRUE";
-                process.StartInfo.Arguments = "-hide_banner -loglevel quiet -nostats " + exportArgs;
+                process.StartInfo.Arguments = "-hide_banner -nostats " + exportArgs;
                 process.StartInfo.UseShellExecute = false;
-                process.StartInfo.RedirectStandardOutput = false;
+                process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.CreateNoWindow = true;
 
-                process.Start();
-
-                var errorRead = Task.Run(() =>
+                process.ErrorDataReceived += (sender, args) => { CaptureMessage("err: ", args); };
+                process.OutputDataReceived += (sender, args) => { CaptureMessage("out: ", args); };
+                
+                bool started = process.Start();
+                if (!started)
                 {
-                    while (!process.StandardError.EndOfStream)
-                    {
-                        var readLine = process.StandardError.ReadLine();
-                        queue.Enqueue(readLine);
-                    }
-                });
-
-                var timeout = new TimeSpan(hours: 1, minutes: 0, seconds: 0);
-
-                if (Task.WaitAll(new[] {errorRead}, timeout) &&
-                    process.WaitForExit((int) timeout.TotalMilliseconds))
-                {
-                    if (process.ExitCode != 0)
-                    {
-                        Log.Log("FFmpeg failed to run");
-                    }
+                    Log.Log($"FFmpeg did not start");
+                    Log.Log($"{process.StartInfo.FileName} {process.StartInfo.Arguments}");
+                    throw new ApplicationException("ffmpeg did not start");
                 }
-                else
+
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
                 {
-                    Log.Log($"FFmpeg timed out after waiting {timeout}");
+                    Log.Log($"FFmpeg failed with exit code {process.ExitCode}");
+                    Log.Log($"{process.StartInfo.FileName} {process.StartInfo.Arguments}");
+                    if (sout.Length > 0)
+                    {
+                        Log.Log(sout.ToString());
+                    }
+
+                    throw new ApplicationException("ffmpeg failed to execute");
                 }
+            }
+            catch (ApplicationException)
+            {
+                throw;
             }
             catch (Exception e)
             {
                 Log.Log($"FFmpeg failed to run: {e.Message}", e);
+                throw;
+            }
+
+            void CaptureMessage(string prefix, DataReceivedEventArgs args)
+            {
+                if (args.Data != null && args.Data.Trim().Length > 0)
+                {
+                    if (sout.Length > 0)
+                    {
+                        sout.Append(Environment.NewLine);
+                    }
+                    sout.Append(prefix).Append(args.Data.Trim());
+                }
             }
         }
     }
