@@ -1,4 +1,6 @@
-﻿using auxmic.mediaUtil;
+﻿using System.Diagnostics;
+using System.IO;
+using auxmic.mediaUtil;
 using SoundFingerprinting;
 using SoundFingerprinting.Audio;
 using SoundFingerprinting.Builder;
@@ -23,21 +25,45 @@ namespace auxmic.sync
         
         public object CreateFingerPrints(Clip clip)
         {
-            ISoundFile soundFile = clip.SoundFile;
+            // string tempFilename = FileToWaveFile.Create(clip.Filename, clip.WaveFormat);
 
+            string tempFilename = FileCache.ComposeTempFilename(clip.Filename);
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+           
             // if wave file already exists, do not create it again
-            if (!FileCache.Exists(soundFile.TempFilename))
+            if (!FileCache.Exists(tempFilename))
             {
-                // TODO: Use clip.MasterWaveFormat not hardcoded 2 and 48000
-                _launcher.ExecuteFFmpeg("-i " + clip.Filename + " -f wav -ac 2 -ar 48000 " + soundFile.TempFilename);
+                if (clip.MasterWaveFormat != null)
+                {
+                    // TODO: Use FileToWaveFile.cs OR FingerprintStreamProvider 
+                    _launcher.ExecuteFFmpeg(
+                        "-i " + clip.Filename + " -f wav -ac " + clip.MasterWaveFormat.Channels +
+                        " -ar " + clip.MasterWaveFormat.SampleRate + " " + tempFilename); 
+                }
+                else
+                {
+                    _launcher.ExecuteFFmpeg(
+                        "-i " + clip.Filename + " -f wav -ac 1 -ar 5512 " + tempFilename);
+                }
             }
+            stopwatch.Stop();
+            FingerprintStreamProvider.Log.Log($"sound ffmpeg took {stopwatch.Elapsed.TotalMilliseconds}");
+ 
+            stopwatch = Stopwatch.StartNew();
             
-            return FingerprintCommandBuilder.Instance
+            var result = FingerprintCommandBuilder.Instance
                 .BuildFingerprintCommand()
-                .From(soundFile.TempFilename)
+                .From(tempFilename)
                 .UsingServices(audioService)
                 .Hash()
                 .Result;
+            
+            stopwatch.Stop();
+            FingerprintStreamProvider.Log.Log($"sound fingerprint took {stopwatch.Elapsed.TotalMilliseconds}");
+
+            return result;
         }
        
         public ClipMatch matchClips(Clip master, Clip lqClip)
@@ -71,7 +97,7 @@ namespace auxmic.sync
 
         public void Cleanup(Clip clip)
         {
-            // nothing to do;
+            File.Delete(FileCache.ComposeTempFilename(clip.Filename));
         }
     }
 }
