@@ -46,7 +46,15 @@ namespace auxmic.ui
             // Catch exceptions from all threads in the AppDomain.
             AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
             {
-                ShowUnhandledException(args.ExceptionObject as Exception, "AppDomain.CurrentDomain.UnhandledException");
+                Exception e = args.ExceptionObject as Exception;
+                ShowUnhandledException(e, "AppDomain.CurrentDomain.UnhandledException");
+                if (args.IsTerminating)
+                {
+                    MessageBox.Show(
+                        "A fatal error has occured and the application must terminate: " +
+                        Environment.NewLine + e?.Message + ": " + Environment.NewLine + e?.StackTrace,
+                        "Application Closing", MessageBoxButton.OK);                    
+                }
             };
             // Catch exceptions from each AppDomain that uses a task scheduler for async operations.
             TaskScheduler.UnobservedTaskException += (sender, args) =>
@@ -68,7 +76,14 @@ namespace auxmic.ui
 
         void ShowUnhandledException(Exception e, string unhandledExceptionType)
         {
-            Log($"An Unexpected {unhandledExceptionType} Error Occurred: {e.Message}", e);
+            try
+            {
+                Log($"An Unexpected {unhandledExceptionType} Error Occurred: {e?.Message}", e);
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine("Failed to log exception: " + e + " due to " + exception);
+            }
         }
         
         private void MasterPanel_Drop(object sender, DragEventArgs e)
@@ -414,21 +429,27 @@ namespace auxmic.ui
 
         public void Log(string message, Exception e = null)
         {
-            // Update the UI
-            this.Dispatcher.Invoke(() =>
+            try
             {
-                Logging.Items.Add(message);
-                Logging.ScrollIntoView(message);
-            });
+                // Update the UI
+                this.Dispatcher.Invoke(() =>
+                {
+                    Logging.Items.Add(message);
+                    Logging.ScrollIntoView(message);
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("Failed to display error " + message + " due to " + ex);
+            }
 
-            // Update the disk file
             try
             {
                 _rollingLogFile.Log(message, e);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Failed to write to log file " + ex.Message);
+                Console.Error.WriteLine("Failed to log error " + message + " due to " + ex);
             }
         }
     }
