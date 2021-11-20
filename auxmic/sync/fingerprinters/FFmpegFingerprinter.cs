@@ -12,6 +12,8 @@ namespace auxmic.sync
 {
     /*
      * Create FingerPrints using "Emy" FFmpegAudioService https://github.com/AddictedCS/soundfingerprinting
+     *
+     * TODO: Rename to EmyFingerPrinter
      */
     public class FFmpegFingerprinter : IFingerprinter
     {
@@ -25,13 +27,20 @@ namespace auxmic.sync
 
             ISoundFile soundFile = clip.SoundFile;
 
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            
             // This processes the source file without using an intermediate .wav file
-            return FingerprintCommandBuilder.Instance
+            var result = FingerprintCommandBuilder.Instance
                 .BuildFingerprintCommand()
                 .From(soundFile.Filename)
                 .UsingServices(audioService)
                 .Hash()
                 .Result;
+            
+            stopwatch.Stop();
+            FingerprintStreamProvider.Log.Log($"emy fingerprint took {stopwatch.Elapsed.TotalMilliseconds}");
+
+            return result;
         }
        
         public ClipMatch matchClips(Clip master, Clip lqClip)

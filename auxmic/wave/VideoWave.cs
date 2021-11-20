@@ -8,14 +8,12 @@ using auxmic.logging;
 namespace auxmic
 {
     // A WAV stream created from any ffmpeg-compatible film, without an intermediate disk file
+    // TODO: Rename as 'FileToWaveStream'
     public class VideoWave : Stream
     {
         private readonly StreamReader ffout;
         private static string _pathToFFmpegExe;
         private static AuxMicLog _log;
-        // private long durationMs;
-
-        // public long DurationMs => durationMs;
 
         public static string PathToFFmpegExe
         {
@@ -122,6 +120,7 @@ namespace auxmic
                 {
                     ByteMe myByte;
 
+                    Stopwatch stopwatch = Stopwatch.StartNew();
                     if (dataItems.TryTake(out myByte, 10000))
                     {
                         localBufferLength = myByte.Read1;
@@ -129,6 +128,11 @@ namespace auxmic
                     }
                     else
                     {
+                        stopwatch.Stop();
+                        if (stopwatch.ElapsedMilliseconds >= 10000)
+                        {
+                            _log.Log($"Buffer read took long! {stopwatch.Elapsed.TotalMilliseconds}");
+                        }
                         break;
                     }
                 }

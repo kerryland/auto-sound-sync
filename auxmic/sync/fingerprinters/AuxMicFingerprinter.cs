@@ -57,6 +57,8 @@ namespace auxmic
                 // Silly nAudio WaveStream thinks it can call .Length and set Position 
                 // on the underlying stream. That won't work, so here's a lightweight
                 // alternative that just reads what we need out of the header
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                
                 WAV_file wavFile = new WAV_file();
                 wavFile.loadFile(wavReader);
                 
@@ -122,6 +124,9 @@ namespace auxmic
 
                     clip.ReportProgress(row);
                 }
+                
+                stopwatch.Stop();
+                FingerprintStreamProvider.Log.Log($"auxmic fingerprint took {stopwatch.Elapsed.TotalMilliseconds}");
             }
 
             // add to cache
