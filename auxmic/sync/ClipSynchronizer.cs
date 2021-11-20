@@ -233,8 +233,11 @@ namespace auxmic
 
                         // запускаем синхронизацию
                         Log.Log($"{clip.DisplayName} synchronizing...");
+                        Stopwatch stopwatch = Stopwatch.StartNew();
                         clip.Sync(this.Master);
-                        Log.Log($"{clip.DisplayName} synchronizing... Done");
+                        stopwatch.Stop();
+                        Log.Log($"{clip.DisplayName} synchronizing... Done in {stopwatch.Elapsed.TotalMilliseconds}");
+                        // Log.Log($"{clip.DisplayName} synchronizing... Done");
                     },
                     clip.CancellationTokenSource.Token,
                     TaskContinuationOptions.LongRunning,
@@ -276,25 +279,6 @@ namespace auxmic
             }
 
             this.LQClips.Clear();
-        }
-
-        /// <summary>
-        /// Сохранение синхронизированного файла.
-        /// Extract a subset of the master file to create a new audio file for "clip" named "filename".
-        /// </summary>
-        /// <param name="clip"></param>
-        /// <param name="filename"></param>
-        public void Save(Clip clip, string filename)
-        {
-            if (clip.MatchResult == null)
-            {
-                throw new ApplicationException("Could not find a match");
-            }
-
-            this.Master.SoundFile.SaveMatch(filename, clip.MatchResult.QueryMatchStartsAt, 
-                clip.MatchResult.TrackMatchStartsAt, clip.SoundFile.Length);
-            
-            Log.Log($"{filename} has been saved");
         }
 
         /// <summary>

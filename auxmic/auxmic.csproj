@@ -80,7 +80,4 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="mediaExport" />
-  </ItemGroup>
 </Project>

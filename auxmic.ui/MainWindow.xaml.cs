@@ -129,6 +129,7 @@ namespace auxmic.ui
             FFmpegTool.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
             VideoWave.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
             VideoWave.Log = this;
+            FingerprintStreamProvider.Log = this;
 
             SoundFingerprinter._launcher = _launcher;
 
@@ -244,7 +245,7 @@ namespace auxmic.ui
 
             if (saveFileDialog.ShowDialog() == true)
             {
-                _clipSynchronizer.Save(clip, saveFileDialog.FileName);
+                ExportClip(clip, saveFileDialog.FileName, false);
             }
         }
 
@@ -284,22 +285,31 @@ namespace auxmic.ui
 
             if (saveFileDialog.ShowDialog() == true)
             {
-                var durationLQ = (clip.Length() / clip.WaveFormat.AverageBytesPerSecond) - clip.MatchResult.QueryMatchStartsAt;
-                var durationHQ = (_clipSynchronizer.Master.Length() / clip.WaveFormat.AverageBytesPerSecond) - clip.MatchResult.TrackMatchStartsAt;
-                var duration = Math.Min(durationHQ, durationLQ);
-                
-                // export media
-                VideoExporter ffmpeg = new VideoExporter(_launcher);
-                ffmpeg.Export(
-                    clip.Filename, 
-                    _clipSynchronizer.Master.Filename,
-                    clip.MatchResult.QueryMatchStartsAt,
-                    clip.MatchResult.TrackMatchStartsAt,
-                    saveFileDialog.FileName,
-                    duration);
-
-                Log($"Clip exported to {saveFileDialog.FileName}");
+                var targetFilePath = saveFileDialog.FileName;
+                ExportClip(clip, targetFilePath, true);
             }
+        }
+
+        private void ExportClip(Clip clip, string targetFilePath, bool video)
+        {
+            var durationLQ = (clip.Length() / clip.WaveFormat.AverageBytesPerSecond) - clip.MatchResult.QueryMatchStartsAt;
+            var durationHQ = (_clipSynchronizer.Master.Length() / clip.WaveFormat.AverageBytesPerSecond) -
+                             clip.MatchResult.TrackMatchStartsAt;
+            var duration = Math.Min(durationHQ, durationLQ);
+
+            // export media
+            MediaExporter ffmpeg = new MediaExporter(_launcher);
+
+            ffmpeg.Export(
+                video,
+                clip.Filename,
+                _clipSynchronizer.Master.Filename,
+                clip.MatchResult.QueryMatchStartsAt,
+                clip.MatchResult.TrackMatchStartsAt,
+                targetFilePath,
+                duration);
+
+            Log($"Clip exported to {targetFilePath}");
         }
 
         private void cmd_AddMaster(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
