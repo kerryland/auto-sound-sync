@@ -1,6 +1,10 @@
-﻿using System.IO;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using auxmic.logging;
 using auxmic.mediaUtil;
-using NAudio.Wave;
+using auxmic.wave;
+using static auxmic.sync.FingerprintStreamProvider;
 
 namespace auxmic.sync
 {
@@ -9,6 +13,8 @@ namespace auxmic.sync
     public interface FingerprintStreamProvider
     {
         Stream GetStream(Clip clip);
+
+        public static AuxMicLog Log;
     }
 
     // Get WAV data via capturing stdout pipe from ffmpeg
@@ -40,7 +46,11 @@ namespace auxmic.sync
             // if such file already exists, do not create it again
             if (!FileCache.Exists(tempFilename))
             {
+                // TODO: Don't hardcode 2 and 48000
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 _launcher.ExecuteFFmpeg("-i " + clip.Filename + " -f wav -ac 2 -ar 48000 " + tempFilename);
+                stopwatch.Stop();
+                Log.Log($"ffmpeg took {stopwatch.Elapsed.TotalMilliseconds}");
             }
 
             return File.OpenRead(tempFilename);
@@ -50,65 +60,23 @@ namespace auxmic.sync
     // Create a WAVE file using the Naudio library. This is the logic traditionally used in AuxMic.
     // It also caches the WAVE file in case we need it later, but if we have cached the fingerprints
     // I don't know why we need the WAVE file too.
-    public class NaudioWavefile : FingerprintStreamProvider
+    public class NaudioWavefile : FingerprintStreamProvider, IDisposable
     {
+        private string tempFilename;
+        
         public Stream GetStream(Clip clip)
         {
-            var tempFilename = FileCache.ComposeTempFilename(clip.Filename);
-
-            // if such file already exists, do not create it again
-            if (!FileCache.Exists(tempFilename))
-            {
-                ExtractAndResampleAudio(clip.MasterWaveFormat, clip.Filename, tempFilename);
-            }
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            var tempFilename = FileToWaveFile.Create(clip.Filename, clip.MasterWaveFormat); 
+            stopwatch.Stop();
+            Log.Log($"naudio took {stopwatch.Elapsed.TotalMilliseconds}");
 
             return File.OpenRead(tempFilename);
         }
-        
-        private void ExtractAndResampleAudio(WaveFormat resampleFormat, string filename, string tempFilename)
+
+        public void Dispose()
         {
-            using (var reader = new MediaFoundationReader(filename))
-            {
-                if (NeedResample(reader.WaveFormat, resampleFormat))
-                {
-                    using (var resampler = new MediaFoundationResampler(reader,
-                        CreateOutputFormat(resampleFormat ?? reader.WaveFormat)))
-                    {
-                        WaveFileWriter.CreateWaveFile(tempFilename, resampler);
-                    }
-                }
-                else
-                {
-                    WaveFileWriter.CreateWaveFile(tempFilename, reader);
-                }
-            }
-        }
-
-        private bool NeedResample(WaveFormat inputFormat, WaveFormat resampleFormat)
-        {
-            // даже если resampleFormat не задан, необходимо проверять
-            // сколько каналов в файле и ресемплировать до 1 канала
-            if (inputFormat.Channels > 2)
-            {
-                return true;
-            }
-
-            if (resampleFormat == null)
-            {
-                return false;
-            }
-
-            // TODO: test if BitsPerSample check needed
-            return inputFormat.SampleRate != resampleFormat.SampleRate; /* || (inputFormat.BitsPerSample != resampleFormat.BitsPerSample)*/
-        }
-
-        private WaveFormat CreateOutputFormat(WaveFormat resampleFormat)
-        {
-            int channels = 1;
-
-            WaveFormat waveFormat = new WaveFormat(resampleFormat.SampleRate, resampleFormat.BitsPerSample, channels);
-
-            return waveFormat;
+            // File.Delete(tempFilename);
         }
     }
 }
