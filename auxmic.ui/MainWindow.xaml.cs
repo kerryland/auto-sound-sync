@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using Microsoft.Win32;
 using System.IO;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Controls.Primitives;
@@ -11,6 +12,7 @@ using auxmic.sync;
 using auxmic.editorExport;
 using auxmic.logging;
 using auxmic.mediaUtil;
+using auxmic.wave;
 
 namespace auxmic.ui
 {
@@ -139,14 +141,14 @@ namespace auxmic.ui
         private void Configure()
         {
             // TODO: Do some proper dependency injection
+            // TODO: Rename _launcher to _ffmpegTool everywhere.
             _launcher = new FFmpegTool(this, Properties.Settings.Default.FFMPEG_EXE_PATH);
             
             FFmpegTool.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
             VideoWave.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
+            FileToWaveFile.FFmpegTool = _launcher;
             VideoWave.Log = this;
             FingerprintStreamProvider.Log = this;
-
-            SoundFingerprinter._launcher = _launcher;
 
             switch (Properties.Settings.Default.WAVE_PROVIDER)
             {
@@ -434,8 +436,13 @@ namespace auxmic.ui
                 // Update the UI
                 this.Dispatcher.Invoke(() =>
                 {
-                    Logging.Items.Add(message);
-                    Logging.ScrollIntoView(message);
+                    ScrollingListBoxAppender lba = new ScrollingListBoxAppender(Logging);
+                    lba.Add(message);
+                    if (e != null)
+                    {
+                        lba.Add(e.Message);
+                    }
+                    lba.Flush();
                 });
             }
             catch (Exception ex)
@@ -451,6 +458,35 @@ namespace auxmic.ui
             {
                 Console.Error.WriteLine("Failed to log error " + message + " due to " + ex);
             }
+        }
+    }
+
+    class ScrollingListBoxAppender
+    {
+        private readonly ListView _listView;
+        private static string guid = Guid.NewGuid().ToString();
+        private List<string> msgs = new List<string>();
+        
+        public ScrollingListBoxAppender(ListView listView)
+        {
+            _listView = listView;
+        }
+
+        public void Add(string message)
+        {
+            msgs.Add(message);
+        }
+
+        public void Flush()
+        {
+            for (int i = 0; i < msgs.Count - 1; i++)
+            {
+                _listView.Items.Add(msgs[i]);
+            }
+
+            var location = _listView.Items.Add(guid);
+            _listView.ScrollIntoView(guid); // we need a unique value to scroll to, otherwise we might scroll to an earlier appearance of the message
+            _listView.Items[location] = msgs[msgs.Count-1]; // replace the guid with the text we actually want to appear.
         }
     }
 }
