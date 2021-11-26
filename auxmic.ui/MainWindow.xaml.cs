@@ -23,7 +23,7 @@ namespace auxmic.ui
     {
         private ClipSynchronizer _clipSynchronizer;
         private RollingLogFile _rollingLogFile;
-        private FFmpegTool _launcher;
+        private FFmpegTool _ffmpegTool;
 
         public MainWindow()
         {
@@ -141,12 +141,11 @@ namespace auxmic.ui
         private void Configure()
         {
             // TODO: Do some proper dependency injection
-            // TODO: Rename _launcher to _ffmpegTool everywhere.
-            _launcher = new FFmpegTool(this, Properties.Settings.Default.FFMPEG_EXE_PATH);
+            _ffmpegTool = new FFmpegTool(this, Properties.Settings.Default.FFMPEG_EXE_PATH);
             
             FFmpegTool.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
             FileToWaveStream.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
-            FileToWaveFile.FFmpegTool = _launcher;
+            FileToWaveFile.FFmpegTool = _ffmpegTool;
             FileToWaveStream.Log = this;
             FingerprintStreamProvider.Log = this;
 
@@ -315,7 +314,7 @@ namespace auxmic.ui
             var duration = Math.Min(durationHQ, durationLQ);
 
             // export media
-            MediaExporter ffmpeg = new MediaExporter(_launcher);
+            MediaExporter ffmpeg = new MediaExporter(_ffmpegTool);
 
             ffmpeg.Export(
                 video,
