@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
-using auxmic.mediaUtil;
+using auxmic.wave;
 using SoundFingerprinting;
 using SoundFingerprinting.Audio;
 using SoundFingerprinting.Builder;
@@ -19,37 +19,18 @@ namespace auxmic.sync
      */
     public class SoundFingerprinter : IFingerprinter
     {
-        public static FFmpegTool _launcher;
-
         private readonly IAudioService audioService = new SoundFingerprintingAudioService(); // default audio library
         
         public object CreateFingerPrints(Clip clip)
         {
-            // string tempFilename = FileToWaveFile.Create(clip.Filename, clip.WaveFormat);
-
-            string tempFilename = FileCache.ComposeTempFilename(clip.Filename);
-
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-           
-            // if wave file already exists, do not create it again
-            if (!FileCache.Exists(tempFilename))
-            {
-                if (clip.MasterWaveFormat != null)
-                {
-                    // TODO: Use FileToWaveFile.cs OR FingerprintStreamProvider 
-                    _launcher.ExecuteFFmpeg(
-                        "-i " + clip.Filename + " -f wav -ac " + clip.MasterWaveFormat.Channels +
-                        " -ar " + clip.MasterWaveFormat.SampleRate + " " + tempFilename); 
-                }
-                else
-                {
-                    _launcher.ExecuteFFmpeg(
-                        "-i " + clip.Filename + " -f wav -ac 1 -ar 5512 " + tempFilename);
-                }
-            }
+            // The "SoundFingerPrinter" only supports 5512, so define it here to avoid an extra resample.
+            var waveFormat = new NAudio.Wave.WaveFormat((int)  5512, 1); 
+            string tempFilename = FileToWaveFile.CreateFast(clip.Filename, waveFormat);
+            
             stopwatch.Stop();
-            FingerprintStreamProvider.Log.Log($"sound ffmpeg took {stopwatch.Elapsed.TotalMilliseconds}");
+            FingerprintStreamProvider.Log.Log($"sound ffmpeg took {stopwatch.Elapsed.TotalMilliseconds}"); // TODO: Fix awful logging
  
             stopwatch = Stopwatch.StartNew();
             
