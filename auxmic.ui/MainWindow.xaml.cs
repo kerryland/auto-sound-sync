@@ -126,7 +126,7 @@ namespace auxmic.ui
                     fingerprinter = new AuxMicFingerprinter();
                     break;
                 case "Emy":
-                    fingerprinter = new FFmpegFingerprinter();
+                    fingerprinter = new EmyFingerprinter();
                     break;
                 case "SoundFingerprinting":
                     fingerprinter = new SoundFingerprinter();

@@ -12,10 +12,8 @@ namespace auxmic.sync
 {
     /*
      * Create FingerPrints using "Emy" FFmpegAudioService https://github.com/AddictedCS/soundfingerprinting
-     *
-     * TODO: Rename to EmyFingerPrinter
      */
-    public class FFmpegFingerprinter : IFingerprinter
+    public class EmyFingerprinter : IFingerprinter
     {
         private readonly IAudioService audioService = new FFmpegAudioService(); // fast and accurate audio library
         
