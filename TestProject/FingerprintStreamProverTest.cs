@@ -5,10 +5,10 @@ using auxmic.mediaUtil;
 using auxmic.sync;
 using auxmic.wave;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NAudio.Wave;
 
 namespace TestProject
 {
-
     [TestClass()]
     public class FingerprintStreamProverTest
     {
@@ -20,15 +20,6 @@ namespace TestProject
         public void MyTestInitialize()
         {
             VideoWave.PathToFFmpegExe = PathToFFmpegExe;
-            // Directory.CreateDirectory(tmp);
-
-            // testMp4 = tmp + "/mlk.mp4";
-
-            // string command = "-loop 1 -t 5 -i " +
-                             // TestData.Filename("mlk%02d.jpg") + " -i " +
-                             // TestData.Filename("MLKDream_64kb.mp3") +" " + testMp4;
-
-            // launcher.ExecuteFFmpeg(command);
             FileCache.Clear("wav");
         }
         
@@ -42,35 +33,51 @@ namespace TestProject
         [TestMethod()]
         public void CheckFFmpegStream()
         {
-            Clip clip = new Clip(TestData.Filename("mlk.mp4"), new SimpleFingerPrinter(), new ConsoleLogger());
-            var stream = new PipedWaveProvider().GetStream(clip);
+            WaveFormat waveFormat = new WaveFormat(44100, 2);
+            Clip clip = new Clip(TestData.Filename("mlk.mp4"), new SimpleFingerPrinter(), new ConsoleLogger(), 
+                new SimpleSoundFileFactory(new SimpleSoundFile().WithWaveFormat(waveFormat))); 
+            
+            clip.LoadFile();
+            using var stream = new PipedWaveProvider().GetStream(clip);
             var wav = new WAV_file();
             wav.loadFile(stream);
+            // stream.Close();
+            // clip.Dispose();
             
-            Assert.AreEqual(48000, Convert.ToInt32(wav.SampleRate));
+            Assert.AreEqual(44100, Convert.ToInt32(wav.SampleRate));
+            Assert.AreEqual(2, Convert.ToInt32(wav.NumOfChannels));
         }
-        
+       
         [TestMethod()]
         public void CheckNAudioFile()
         {
-            Clip clip = new Clip(TestData.Filename("mlk.mp4"), new SimpleFingerPrinter(), new ConsoleLogger()); var stream = new NaudioWavefile().GetStream(clip);
+            FingerprintStreamProvider.Log = new ConsoleLogger();
+            
+            Clip clip = new Clip(TestData.Filename("mlk.mp4"), new SimpleFingerPrinter(),
+                FingerprintStreamProvider.Log);
+            
+            using var stream = new NaudioWavefile().GetStream(clip);
             var wav = new WAV_file();
+            
             wav.loadFile(stream);
-            Assert.AreEqual(48000, Convert.ToInt32(wav.SampleRate));
-            stream.Close();
+            Assert.AreEqual(22050, Convert.ToInt32(wav.SampleRate));
+            Assert.AreEqual(1, Convert.ToInt32(wav.NumOfChannels));
         }
 
+        
         [TestMethod()]
         public void CheckFFmpegWaveFile()
         {
-            FFmpegTool _launcher = new FFmpegTool(new ConsoleLogger(), PathToFFmpegExe);
+            var log = new ConsoleLogger();
+            FileToWaveFile.FFmpegTool = new FFmpegTool(log, PathToFFmpegExe);
+            FingerprintStreamProvider.Log = log;
 
-            Clip clip = new Clip(TestData.Filename("mlk.mp4"), new SimpleFingerPrinter(), new ConsoleLogger());
-            var stream = new FFmpegWaveFile(_launcher).GetStream(clip);
+            Clip clip = new Clip(TestData.Filename("mlk.mp4"), new SimpleFingerPrinter(), log);
+            using var stream = new FFmpegWaveFile().GetStream(clip);
             var wav = new WAV_file();
             wav.loadFile(stream);
-            Assert.AreEqual(48000, Convert.ToInt32(wav.SampleRate));
-            stream.Close();
+            Assert.AreEqual(22050, Convert.ToInt32(wav.SampleRate));
+            Assert.AreEqual(1, Convert.ToInt32(wav.NumOfChannels));
         }
     }
 }

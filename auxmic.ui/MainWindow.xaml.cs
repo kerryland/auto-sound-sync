@@ -156,7 +156,7 @@ namespace auxmic.ui
                     AuxMicFingerprinter.FingerprintStreamProvider = new NaudioWavefile();
                     break;
                 case "FFMpeg":
-                    AuxMicFingerprinter.FingerprintStreamProvider = new FFmpegWaveFile(_launcher);
+                    AuxMicFingerprinter.FingerprintStreamProvider = new FFmpegWaveFile();
                     break;
                 case "Pipe":
                     AuxMicFingerprinter.FingerprintStreamProvider = new PipedWaveProvider();

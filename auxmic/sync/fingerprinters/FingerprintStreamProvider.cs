@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using auxmic.logging;
-using auxmic.mediaUtil;
 using auxmic.wave;
 using static auxmic.sync.FingerprintStreamProvider;
 
@@ -19,41 +18,35 @@ namespace auxmic.sync
 
     // Get WAV data via capturing stdout pipe from ffmpeg
     // This logic means there is no intermediate file, so
-    // I had expected it to be fastest. It isn't.
+    // it's much faster than using the nAudio library.
     public class PipedWaveProvider : FingerprintStreamProvider
     {
         public Stream GetStream(Clip clip)
         {
-            return new VideoWave(clip.Filename);
+            return new VideoWave(clip.Filename, clip.WaveFormat, clip.MasterWaveFormat);
         }
     }
 
     // Create a WAVE file using ffmpeg. Even though we are spawning an
     // external process it's still extremely fast. 
-    public class FFmpegWaveFile : FingerprintStreamProvider
+    public class FFmpegWaveFile : FingerprintStreamProvider, IDisposable
     {
-        private readonly FFmpegTool _launcher;
-
-        public FFmpegWaveFile(FFmpegTool _launcher)
-        {
-            this._launcher = _launcher;
-        }
+        private string tempFilename;
 
         public Stream GetStream(Clip clip)
         {
-            var tempFilename = FileCache.ComposeTempFilename(clip.Filename);
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
-            // if such file already exists, do not create it again
-            if (!FileCache.Exists(tempFilename))
-            {
-                // TODO: Don't hardcode 2 and 48000
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                _launcher.ExecuteFFmpeg("-i " + clip.Filename + " -f wav -ac 2 -ar 48000 " + tempFilename);
-                stopwatch.Stop();
-                Log.Log($"ffmpeg took {stopwatch.Elapsed.TotalMilliseconds}");
-            }
+            tempFilename = FileToWaveFile.CreateFast(clip.Filename, null); 
+            stopwatch.Stop();
+            Log.Log($"ffmpeg took {stopwatch.Elapsed.TotalMilliseconds}");
 
             return File.OpenRead(tempFilename);
+        }
+        
+        public void Dispose()
+        {
+            File.Delete(tempFilename);
         }
     }
     
@@ -67,16 +60,17 @@ namespace auxmic.sync
         public Stream GetStream(Clip clip)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
-            var tempFilename = FileToWaveFile.Create(clip.Filename, clip.MasterWaveFormat); 
+            tempFilename = FileToWaveFile.CreateSlow(clip.Filename, clip.MasterWaveFormat); 
+            // tempFilename = FileToWaveFile.CreateFast(clip.Filename, clip.MasterWaveFormat); 
             stopwatch.Stop();
-            Log.Log($"naudio took {stopwatch.Elapsed.TotalMilliseconds}");
+            Log.Log($"wav create in {stopwatch.Elapsed.TotalMilliseconds}");
 
             return File.OpenRead(tempFilename);
         }
 
         public void Dispose()
         {
-            // File.Delete(tempFilename);
+            File.Delete(tempFilename);
         }
     }
 }
