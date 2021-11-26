@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using auxmic.logging;
+using auxmic.wave;
+using NAudio.Wave;
 
 namespace auxmic
 {
@@ -46,8 +48,11 @@ namespace auxmic
         private readonly BlockingCollection<ByteMe> dataItems = new BlockingCollection<ByteMe>(1024);
 
         // Creates a WAV stream converted from the provided video file
-        public VideoWave(string filename)
+        public VideoWave(string filename, WaveFormat sourceWaveFormat, WaveFormat masterWaveFormat)
         {
+            var exportFormat = FileToWaveFile.NeedResample(sourceWaveFormat, masterWaveFormat) 
+                ? masterWaveFormat : sourceWaveFormat;
+            
             ffmpeg = new Process();
             ProcessStartInfo ffmpegStartInfo = new ProcessStartInfo
             {
@@ -56,8 +61,8 @@ namespace auxmic
                 RedirectStandardError = true, // should be hidden
                 UseShellExecute = false,
                 CreateNoWindow = true,  
-                // WindowStyle = ProcessWindowStyle.Hidden,
-                Arguments = "-i \"" + filename + "\" -f wav -ac 2 -ar 48000 pipe:1"
+                Arguments = "-i \"" + filename + "\" -f wav -ac " + exportFormat.Channels +
+                            " -ar " + exportFormat.SampleRate + " pipe:1"
             };
 
             ffmpeg.StartInfo = ffmpegStartInfo;
