@@ -14,11 +14,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestProject", "TestProject\TestProject.csproj", "{156DCEEF-900F-483D-8822-CC3BDAB055B9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{168D6492-0593-48F4-AB63-13E94E54E606}"
-	ProjectSection(SolutionItems) = preProject
-		auxmic.vsmdi = auxmic.vsmdi
-		Local.testsettings = Local.testsettings
-		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "auxmic.ui", "auxmic.ui\auxmic.ui.csproj", "{24FD5E19-CEEC-4E68-BE14-33DE34573B13}"
 EndProject

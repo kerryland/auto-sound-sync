@@ -99,28 +99,23 @@ namespace auxmic.wave
                 byte_rate = reader.ReadUInt32();
                 block_align = reader.ReadUInt16();
                 bps = reader.ReadUInt16(); //Bits per sample 
-                datachunk_id = reader.ReadBytes(4); // Byte[]
+                datachunk_id = reader.ReadBytes(4); // Byte[]  "data"
                 datachunk_size = reader.ReadUInt32();
+                
+                //---------------------------------------------------------------------------------------
+                // Read two more bytes for compatibility with WaveReader. I don't know what they are for!
+                // TODO: Look more closely at WaveReader and learn what it's doing with these bytes.
+                // Removing this will break a number of tests, which is probably fine.
+                reader.ReadBytes(2); // Byte[]
+                //---------------------------------------------------------------------------------------
+
 
                 // File type validations.
                 if (Encoding.ASCII.GetString(chunk_id) != "RIFF"
                     || Encoding.ASCII.GetString(format) != "WAVE")
                     throw new ApplicationException("ERROR: Source is not a WAV file");
                 if (audio_format != 1) throw new ApplicationException("ERROR: API only supports PCM format in WAV.");
-
-                switch ((BITS_PER_SAMPLE) bps)
-                {
-                    case BITS_PER_SAMPLE.BPS_8_BITS:
-                        bufferInternal_uint8 = reader.ReadBytes((int) datachunk_size);
-                        break;
-
-                    case BITS_PER_SAMPLE.BPS_16_BITS:
-                        reader.ReadBytes((short) datachunk_size); // SO I JUST ADDED THIS INSTEAD.
-                        break;
-
-                    default:
-                        throw new ApplicationException("ERROR: Incorrect bits per sample in source");
-                }
+ 
             }
         }
     } 

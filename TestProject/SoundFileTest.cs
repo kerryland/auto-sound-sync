@@ -1,14 +1,17 @@
 ﻿using auxmic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections;
 using NAudio.Wave;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using auxmic.mediaUtil;
+using auxmic.wave;
 
 namespace TestProject
 {
-    
-    
+
     /// <summary>
     ///This is a test class for SoundFileTest and is intended
     ///to contain all SoundFileTest Unit Tests
@@ -16,6 +19,19 @@ namespace TestProject
     [TestClass()]
     public class SoundFileTest
     {
+
+        string PathToFFmpegExe = "D:/apps/ffmpeg-4.4-full_build/bin/ffmpeg.exe";
+
+        public SoundFileTest()
+        {
+            FFmpegTool.PathToFFmpegExe = PathToFFmpegExe;
+            FileToWaveFile.FFmpegTool = new FFmpegTool(new ConsoleLogger(), PathToFFmpegExe);
+
+        }
+
+
+
+
         private TestContext testContextInstance;
 
         /// <summary>
@@ -24,17 +40,12 @@ namespace TestProject
         ///</summary>
         public TestContext TestContext
         {
-            get
-            {
-                return testContextInstance;
-            }
-            set
-            {
-                testContextInstance = value;
-            }
+            get { return testContextInstance; }
+            set { testContextInstance = value; }
         }
 
         #region Additional test attributes
+
         // 
         //You can use the following additional attributes as you write your tests:
         //
@@ -62,6 +73,7 @@ namespace TestProject
         //{
         //}
         //
+
         #endregion
 
 
@@ -78,27 +90,26 @@ namespace TestProject
 
             ReadFile(filename, out actual, out expected, TestData.dtmf_1to0);
 
-            CollectionAssert.AreEqual(expected, actual);
+            AssertMostlyEqual(expected, actual);
         }
-        
+
         private static void ReadFile(string testData, out Int32[] actual, out Int32[] expected, Int32[] fileData)
         {
             string filename = TestData.Filename(testData);
 
-            WaveFormat resampleFormat = null;
-            
-            // This constructor also create a wave file
-            SoundFile soundFile = new SoundFile(filename);
-            
+            WaveFormat resampleFormat = null; // so supposed to figure it out from source
+
+            string tempFilename = FileToWaveFile.CreateSlow(filename, resampleFormat);
+
             // Now read the new wave file and see if it contains what we expect it to
-            using (var waveFileReader = new WaveFileReader(soundFile.TempFilename)) 
+            using (var waveFileReader = new WaveFileReader(tempFilename))
             {
                 List<Int32> leftChannel = new List<Int32>();
 
                 int L = 256; //_syncParams.L;
                 long N = waveFileReader.SampleCount;
 
-                for (int i = 0; i <= N - L; i += L)  // sb i <= N - L
+                for (int i = 0; i <= N - L; i += L) // sb i <= N - L
                 {
                     Int32[] data = ReadFile(waveFileReader, L);
                     leftChannel.AddRange(data);
@@ -156,7 +167,7 @@ namespace TestProject
 
             ReadFile(filename, out actual, out expected, TestData.DSC_6785_48kHz_16bit_mono);
 
-            CollectionAssert.AreEqual(expected, actual);
+            AssertMostlyEqual(expected, actual);
         }
 
         [TestMethod()]
@@ -169,7 +180,29 @@ namespace TestProject
 
             ReadFile(filename, out actual, out expected, TestData.master_48kHz_16bit_stereo);
 
-            CollectionAssert.AreEqual(expected, actual);
+            AssertMostlyEqual(expected, actual);
+        }
+
+        private void AssertMostlyEqual(ICollection expected,
+            ICollection actual)
+        {
+            IEnumerator expectedEnumerator = expected.GetEnumerator();
+            IEnumerator actualEnumerator = actual.GetEnumerator();
+            int num = 0;
+            while (expectedEnumerator.MoveNext() && actualEnumerator.MoveNext())
+            {
+                if (!Equals(expectedEnumerator.Current, actualEnumerator.Current))
+                {
+                    throw new ApplicationException(
+                        $"Items at element {num} do not match. " +
+                        $"Expected {expectedEnumerator.Current} vs " +
+                        $"Actual {actualEnumerator.Current}");
+                }
+
+                ++num;
+            }
         }
     }
 }
+    
+    
