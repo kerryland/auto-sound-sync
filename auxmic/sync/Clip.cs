@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using auxmic.logging;
 using auxmic.sync;
-
+using NAudio.Wave;
 using WaveFormat = NAudio.Wave.WaveFormat;
 
 namespace auxmic
@@ -28,6 +28,7 @@ namespace auxmic
         /// Формат мастер-записи к которому надо ресемплировать остальные файлы для дальнейшей работы с ними.
         /// </summary>
         private readonly WaveFormat _masterWaveFormat;
+        private WaveFormat _waveFormat;
 
         internal readonly CancellationTokenSource CancellationTokenSource = new CancellationTokenSource();
 
@@ -271,7 +272,7 @@ namespace auxmic
         {
             get
             {
-                return this.SoundFile.WaveFormat;
+                return _waveFormat;
             }
         }
 
@@ -364,13 +365,12 @@ namespace auxmic
         }
 
         /// <summary>
-        /// Загрузка звукового файла. Файл извлекается из медиа-контейнера, ресемплируется
-        /// и в виде WAV-фала сохрнаяется во временную директорию.
+        /// Загрузка звукового файла. 
         /// Если формат файла не поддерживается Media Foundation выдаст исключение 
         /// COMException MF_MEDIA_ENGINE_ERR_SRC_NOT_SUPPORTED,
         /// которое перехватывается и оборачивается в NotSupportedException.
         ///
-        /// Extract audio from file and save as a .WAV into the temp folder
+        /// Extract bitrate etc from the media file
         /// </summary>
         internal void LoadFile()
         {
@@ -378,8 +378,9 @@ namespace auxmic
 
             try
             {
+                // TODO: Pull local WaveFormat etc properties and remove reference to SoundFile.
                 this.SoundFile = _soundFileFactory.CreateSoundFile(this.Filename, this._masterWaveFormat);
-                // this.SoundFile = new SoundFile(this.Filename, this._resampleFormat);
+                _waveFormat = this.SoundFile.WaveFormat;
             }
             catch (COMException ex)
             {

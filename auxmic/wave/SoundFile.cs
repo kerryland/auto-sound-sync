@@ -33,17 +33,17 @@ namespace auxmic
             this.Filename = filename;
             this.TempFilename = FileCache.ComposeTempFilename(filename);
 
-            ReadWave(this.Filename);
+            ExtractWaveFormatAndLengths(this.Filename);
         }
 
-        private void ReadWave(string filename)
+        private void ExtractWaveFormatAndLengths(string filename)
         {
             Debug.Assert(filename != null, nameof(filename) + " != null");
 
             using (var fileReader = new MediaFoundationReader(filename))
             {
                 this.WaveFormat = fileReader.WaveFormat;
-                this.DataLength = (int) (fileReader.Length / this.WaveFormat.BlockAlign);
+                this.DataLength = (int)(fileReader.TotalTime.TotalSeconds * fileReader.WaveFormat.SampleRate);
                 this.Length = fileReader.Length;
             }
         }

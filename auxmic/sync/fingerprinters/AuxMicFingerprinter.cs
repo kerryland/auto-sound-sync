@@ -42,8 +42,6 @@ namespace auxmic
         /// <returns></returns>
         private Int32[] GetHashes(Clip clip)
         {
-            ISoundFile soundFile = clip.SoundFile;
-            
             if (FileCache.Contains(GetCachedFilename(clip)))
             {
                 clip.ReportProgress(clip.MaxProgressValue);
@@ -61,13 +59,13 @@ namespace auxmic
                 
                 WAV_file wavFile = new WAV_file();
                 wavFile.loadFile(wavReader);
-                
-                soundFile.WaveFormat = new WaveFormat((int) wavFile.SampleRate, 
-                    (int)wavFile.BitsPerSample,
-                    (int)wavFile.NumOfChannels);
+
+                WaveFormat targetWaveFormat= new WaveFormat((int) wavFile.SampleRate, 
+                        (int)wavFile.BitsPerSample,
+                        (int)wavFile.NumOfChannels);
 
                 int L = _syncParams.L;
-                long N = soundFile.DataLength;
+                long N = clip.DataLength;
 
                 int ranges = (int) Math.Ceiling(((decimal) (L / 2) / _syncParams.FreqRangeStep));
 
@@ -85,7 +83,8 @@ namespace auxmic
 
                     // читаем необходимое количество данных из левого канала в "окно"
                     // read a piece of the sound file for processing as a window
-                    Complex[] segment = ReadComplex(wavReader, soundFile.WaveFormat, L);
+                    // Complex[] segment = ReadComplex(wavReader, soundFile.WaveFormat, L);
+                    Complex[] segment = ReadComplex(wavReader, targetWaveFormat, L);
 
                     // применяем оконную функцию через делегат
                     // apply a window function via a delegate
