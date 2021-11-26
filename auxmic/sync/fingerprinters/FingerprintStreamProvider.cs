@@ -23,7 +23,7 @@ namespace auxmic.sync
     {
         public Stream GetStream(Clip clip)
         {
-            return new VideoWave(clip.Filename, clip.WaveFormat, clip.MasterWaveFormat);
+            return new FileToWaveStream(clip.Filename, clip.WaveFormat, clip.MasterWaveFormat);
         }
     }
 

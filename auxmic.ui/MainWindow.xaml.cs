@@ -145,9 +145,9 @@ namespace auxmic.ui
             _launcher = new FFmpegTool(this, Properties.Settings.Default.FFMPEG_EXE_PATH);
             
             FFmpegTool.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
-            VideoWave.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
+            FileToWaveStream.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
             FileToWaveFile.FFmpegTool = _launcher;
-            VideoWave.Log = this;
+            FileToWaveStream.Log = this;
             FingerprintStreamProvider.Log = this;
 
             switch (Properties.Settings.Default.WAVE_PROVIDER)

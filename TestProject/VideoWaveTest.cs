@@ -17,12 +17,12 @@ namespace TestProject
                 // try
                 // {
                 // TODO: Fix hard coded path.
-                    VideoWave.PathToFFmpegExe = "D:/apps/ffmpeg-4.4-full_build/bin/ffmpeg.exe";
-                    VideoWave.Log = new ConsoleLogger();
+                    FileToWaveStream.PathToFFmpegExe = "D:/apps/ffmpeg-4.4-full_build/bin/ffmpeg.exe";
+                    FileToWaveStream.Log = new ConsoleLogger();
                     // VideoWave.Log = new RollingLogFile("d:/tmp","xx", 2, 500000);
                     
                     // TODO: Need permanent files
-                    VideoWave vw = new VideoWave("D:/Videos/holby-00-master-missing-start.mp4",
+                    FileToWaveStream vw = new FileToWaveStream("D:/Videos/holby-00-master-missing-start.mp4",
                         new WaveFormat(8192, 2), null);
                     
                     // VideoWave vw = new VideoWave("D:/Videos/holby-01-start.mp4");

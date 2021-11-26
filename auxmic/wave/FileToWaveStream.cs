@@ -10,8 +10,7 @@ using NAudio.Wave;
 namespace auxmic
 {
     // A WAV stream created from any ffmpeg-compatible film, without an intermediate disk file
-    // TODO: Rename as 'FileToWaveStream'
-    public class VideoWave : Stream
+    public class FileToWaveStream : Stream
     {
         private readonly StreamReader ffout;
         private static string _pathToFFmpegExe;
@@ -48,7 +47,7 @@ namespace auxmic
         private readonly BlockingCollection<ByteMe> dataItems = new BlockingCollection<ByteMe>(1024);
 
         // Creates a WAV stream converted from the provided video file
-        public VideoWave(string filename, WaveFormat sourceWaveFormat, WaveFormat masterWaveFormat)
+        public FileToWaveStream(string filename, WaveFormat sourceWaveFormat, WaveFormat masterWaveFormat)
         {
             var exportFormat = FileToWaveFile.NeedResample(sourceWaveFormat, masterWaveFormat) 
                 ? masterWaveFormat : sourceWaveFormat;

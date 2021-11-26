@@ -19,7 +19,7 @@ namespace TestProject
         [TestInitialize()]
         public void MyTestInitialize()
         {
-            VideoWave.PathToFFmpegExe = PathToFFmpegExe;
+            FileToWaveStream.PathToFFmpegExe = PathToFFmpegExe;
             FileCache.Clear("wav");
         }
         
