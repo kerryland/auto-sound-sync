@@ -5,14 +5,14 @@
 
 `auxmic` is an open source audio synchronization software.
 
-![how it works: matching files](http://auxmic.com/sites/default/files/pictures/sync.png)
+![how it works: matching files](images/sync.png?raw=true "How it works: matching files")
 
 The only purpose is to help you synchronize audio files from different sources. Assume you filming any event with DSLR or camcorder while recording audio to an external microphone. You do not need a clapperboard anymore - using auxmic you can easily cut audio from your master record. Just drag and drop your records and get right timecodes or even export synced files.
 
 Since version `0.8.1.115` you can export synced files with `FFmpeg` without using any NLE software.
 
 ## Supported Formats
-Format | File Extensions | Windows 7 | Windows 8/10
+Format | File Extensions | Windows 7 | Windows 8/10+
 ------ | --------------- | --------- | ------------
 AVI | .avi | + | +
 MPEG-4 | .m4a, .m4v, .mov, .mp4 | + | +
@@ -28,6 +28,6 @@ MPEG program stream | .vob, .mod | - | +
 [Supported Media Formats in Media Foundation](http://msdn.microsoft.com/en-us/library/dd757927(VS.85).aspx)
 
 ## Screenshots
-![main window: on-screen instruction](http://www.auxmic.com/sites/default/files/pictures/main-form-startup.png)
+![Main window: on-screen instruction](images/main-form-startup.png?raw=true "Main window: on-screen instruction")
 
-![main window: synching in progress](http://www.auxmic.com/sites/default/files/pictures/main-form.png)
+![Main window: synchronization in progress](images/main-form.png?raw=true "Main window: synchronization in progress")
