@@ -44,7 +44,7 @@ namespace auxmic.wave
         private ushort bps; //Bits per sample 
         // private short[] bufferInternal_int16;
 
-        private byte[] bufferInternal_uint8;
+        //private byte[] bufferInternal_uint8;
         private uint byte_rate;
 
         // WAV file header fields.

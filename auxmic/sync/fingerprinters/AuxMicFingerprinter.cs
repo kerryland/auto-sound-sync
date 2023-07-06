@@ -45,7 +45,7 @@ namespace auxmic
             if (FileCache.Contains(GetCachedFilename(clip)))
             {
                 clip.ReportProgress(clip.MaxProgressValue);
-                return FileCache.Get<Int32[]>(GetCachedFilename(clip));
+                return FileCache.Get(GetCachedFilename(clip));
             }
 
             Int32[] hashes;
