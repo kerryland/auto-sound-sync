@@ -10,6 +10,11 @@
 *.userosscache
 *.sln.docstates
 
+# Local garbage directories
+.idea/*
+FinalCutProject/*
+
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
