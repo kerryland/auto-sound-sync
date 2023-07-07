@@ -28,7 +28,7 @@ namespace auxmic.ui
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            ProductName.Text = String.Format("auxmic v.{0}", Assembly.GetExecutingAssembly().GetName().Version);
+            ProductName.Text = String.Format("ASS v.{0}", Assembly.GetExecutingAssembly().GetName().Version);
         }
     }
 }

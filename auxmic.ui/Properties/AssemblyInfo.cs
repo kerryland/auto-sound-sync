@@ -7,12 +7,12 @@ using System.Windows;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("auxmic.ui")]
+[assembly: AssemblyTitle("ASS")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("auxmic")]
 [assembly: AssemblyProduct("auxmic")]
-[assembly: AssemblyCopyright("Copyright © 2014-2020 Vladislav Osmanov")]
+[assembly: AssemblyCopyright("Copyright © 2014-2020 Vladislav Osmanov. 2021-2023 K Sainsbury")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -52,8 +52,6 @@ using System.Windows;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 
-// см. http://stackoverflow.com/questions/12176/svn-revision-version-in-net-assembly-w-out-cc-net
-// http://www.codeproject.com/Articles/27874/Use-Subversion-Revision-Numbers-in-your-Visual-Stu
-[assembly: AssemblyVersion("0.8.1.115")]
-[assembly: AssemblyFileVersion("0.8.1.115")]
+[assembly: AssemblyVersion("1.0.0.1")]
+[assembly: AssemblyFileVersion("1.0.0.1")]
 //[assembly: AssemblyInformationalVersion("Build date: 2017-01-26 21:02:40; Revision date: 2017-01-21 16:04:51; Revision(s) in working copy: 95:97; WARNING working copy had uncommitted modifications.")]
