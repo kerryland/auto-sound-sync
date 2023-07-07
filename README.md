@@ -5,11 +5,11 @@ Auto Sound Sync (ASS) is a poor man's version of [PluralEyes](https://www.maxon.
 
 It means you no longer have to use a clapper-board, or manually align wave-forms in your video editor. Just run ASS, and import the project file into your NLE editor.
 
-Most main-stream NLE video editors now have this included, so PluralEyes has gone away.
+Most main-stream NLE video editors now have this included, so PluralEyes has gone away. Arguably there is no longer any need for this software either, unless you use Magix Vegas :-)
 
 ASS is a fork of the most excellent [auxmic](https://github.com/osmanovv/auxmic), and also makes use of [ffmpeg](https://ffmpeg.org/), and [SoundFingerprinting](https://github.com/AddictedCS/soundfingerprinting)
 
-## How to use it:
+# How to use it:
 
 1. Install [ffmpeg](https://ffmpeg.org/), and point ASS at it in the Options dialog. Leave "Synchronizer" set to "Soundfingerprinting".
 
@@ -39,8 +39,9 @@ ASS is a fork of the most excellent [auxmic](https://github.com/osmanovv/auxmic)
 
 8. Edit as usual
 ![Vegas: Imported success](images/06-import-success.png?raw=true "Vegas: Imported success")
+Notice how the subclips appear based on where their audio files match up.
 
-## Other synchronization options
+# Other synchronization options
 The options dialog offers three alternative synchronization options:
 
 ## Soundfingerprinter
@@ -52,21 +53,17 @@ The original auxmic algorithm. Significantly slower than Soundfingerprinter, and
 ## Emy
 Even faster finger printer? I didn't test it much. Requires avutil-56.dll from ffmpeg to be installed. I can't be bothered right now.
 
-## FAQ:
+# FAQ:
 
-**Q:** So why does ASS exist? 
+**Q:** So why does ASS exist?  
 **A:** I use Magix Vegas Pro, and it's ability to provide this function is subpar. Also because I made this fork ages ago :-)
 
-**Q:** Is it fast?
+**Q:** Is it fast?  
 **A:** It's WAY fast. When synchronising 4 files over 30 minute period, Vegas Pro takes nearly 2 hours, and then crashes, ASS only takes a few seconds.
 
-**Q:** Why does it create Final Cut Pro 7 project files?
-**A:** Because they are the lingua franca of NLEs. Everything can import them.
+**Q:** Why does it create Final Cut Pro 7 project files?  
+**A:** Because they are the lingua franca of NLEs. Everything can import them, including Vegas, Davinci, and Premiere.
 
-**Q:** Why didn't this just get merged back into auxmic?
+**Q:** Why didn't this just get merged back into auxmic?  
 **A:** Because I refactored the hell out of it, and it became unmergable.
-
-
-
-![How it works: matching files](images/sync.png?raw=true "How it works: matching files")
 
