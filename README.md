@@ -11,20 +11,33 @@ ASS is a fork of the most excellent [auxmic](https://github.com/osmanovv/auxmic)
 
 ## How to use it:
 
-#. Install [ffmpeg](https://ffmpeg.org/), and point ASS at it in the Options dialog. Leave "Synchronizer" set to "Soundfingerprinting".
+1. Install [ffmpeg](https://ffmpeg.org/), and point ASS at it in the Options dialog. Leave "Synchronizer" set to "Soundfingerprinting".
+
 ![Options: Configure ffmpeg](images/00-options.png?raw=true "Options: configure ffmpeg")
-#. Record some video and audio of the same event.
-#. Choose the file that contains the best audio. It can be a video file, or a pure audio recording. Set it as the "High quality audio source".
+
+2. Record some video and audio of the same event.
+
+3. Choose the file that contains the best audio. It can be a video file, or a pure audio recording. Set it as the "High quality audio source".
+
 ![Main: Set High quality audio source](images/01-set-high-quality.png?raw=true "Main: Set High quality audio source")
-#. Add the other video files as "Media to Synchronize"
+
+4. Add the other video files as "Media to Synchronize"
+
 ![Main: Set Media to Synchronize](images/02-set-media-to-sync.png?raw=true "Main: Set Media to Synchronize")
-#. Wait for synchronization to complete, and all bars to turn green.
+
+5. Wait for synchronization to complete, and all bars to turn green.
+
 ![Main: Wait for synchronization](images/03-wait-for-sync.png?raw=true "Main: Wait for synchronization")
-#. Export the Final Cut project file
+
+6. Export the Final Cut project file
+
 ![Main: Export project](images/04-export-project.png?raw=true "Main: Export project")
-#. Import the project file into your video editor of choice
+
+7. Import the project file into your video editor of choice
+
 ![Vegas: Import project](images/05-import-project.png?raw=true "Vegas: Import project")
-#. Edit as usual
+
+8. Edit as usual
 ![Vegas: Imported success](images/06-import-success.png?raw=true "Vegas: Imported success")
 
 ## Other synchronization options
@@ -37,8 +50,7 @@ Fast and reliable finger printing. Recommended.
 The original auxmic algorithm. Significantly slower than Soundfingerprinter, and not usually better, but will sometimes match when Soundfingerprinter will not.
 
 ## Emy
-Even faster finger printer? I didn't test it much. Requires avutil-56.dll from ffmpeg to be installed. Maybe I need to update :-)
-
+Even faster finger printer? I didn't test it much. Requires avutil-56.dll from ffmpeg to be installed. I can't be bothered right now.
 
 ## FAQ:
 
