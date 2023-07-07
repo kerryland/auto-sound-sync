@@ -204,7 +204,7 @@ namespace auxmic.ui
             LQItems.Items.Clear();
             Logging.Items.Clear();
             Log($"Log file at {_rollingLogFile.LogFilename}");
-            Log("Welcome to AuxMic. Please select files to synchronize");
+            Log("Welcome to Auto Sound Sync. Please select files to synchronize");
 
             HQItems.ItemsSource = _clipSynchronizer.MasterClips;
             LQItems.ItemsSource = _clipSynchronizer.LQClips;

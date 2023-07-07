@@ -1,33 +1,60 @@
-# auxmic
- 
-[![auxmic build](https://github.com/osmanovv/auxmic/workflows/auxmic%20build/badge.svg)](https://github.com/osmanovv/auxmic/actions)
+# Auto Sound Sync
 [![GitHub license](https://img.shields.io/github/license/osmanovv/auxmic)](https://github.com/osmanovv/auxmic/blob/master/LICENSE)
 
-`auxmic` is an open source audio synchronization software.
+Auto Sound Sync (ASS) is a poor man's version of [PluralEyes](https://www.maxon.net/en/red-giant/pluraleyes), which was software that allowed you to automatically synchronise video clips by analysing their audio wave forms.
 
-![how it works: matching files](images/sync.png?raw=true "How it works: matching files")
+It means you no longer have to use a clapper-board, or manually align wave-forms in your video editor. Just run ASS, and import the project file into your NLE editor.
 
-The only purpose is to help you synchronize audio files from different sources. Assume you filming any event with DSLR or camcorder while recording audio to an external microphone. You do not need a clapperboard anymore - using auxmic you can easily cut audio from your master record. Just drag and drop your records and get right timecodes or even export synced files.
+Most main-stream NLE video editors now have this included, so PluralEyes has gone away.
 
-Since version `0.8.1.115` you can export synced files with `FFmpeg` without using any NLE software.
+ASS is a fork of the most excellent [auxmic](https://github.com/osmanovv/auxmic), and also makes use of [ffmpeg](https://ffmpeg.org/), and [SoundFingerprinting](https://github.com/AddictedCS/soundfingerprinting)
 
-## Supported Formats
-Format | File Extensions | Windows 7 | Windows 8/10+
------- | --------------- | --------- | ------------
-AVI | .avi | + | +
-MPEG-4 | .m4a, .m4v, .mov, .mp4 | + | +
-MP3 | .mp3 | + | +
-WAVE | .wav | + | +
-3GP | .3g2, .3gp, .3gp2, .3gpp | + | +
-Advanced Streaming Format (ASF) | .asf, .wma, .wmv | + | +
-Audio Data Transport Stream (ADTS) | .aac, .adts | + | +
-MPEG-2 | .mpg, .mpeg | - | +
-MPEG transport stream | .m2t, .m2ts, .mp2v, .mts, .ts | - | +
-MPEG program stream | .vob, .mod | - | +
+## How to use it:
 
-[Supported Media Formats in Media Foundation](http://msdn.microsoft.com/en-us/library/dd757927(VS.85).aspx)
+#. Install [ffmpeg](https://ffmpeg.org/), and point ASS at it in the Options dialog. Leave "Synchronizer" set to "Soundfingerprinting".
+![Options: Configure ffmpeg](images/00-options.png?raw=true "Options: configure ffmpeg")
+#. Record some video and audio of the same event.
+#. Choose the file that contains the best audio. It can be a video file, or a pure audio recording. Set it as the "High quality audio source".
+![Main: Set High quality audio source](images/01-set-high-quality.png?raw=true "Main: Set High quality audio source")
+#. Add the other video files as "Media to Synchronize"
+![Main: Set Media to Synchronize](images/02-set-media-to-sync.png?raw=true "Main: Set Media to Synchronize")
+#. Wait for synchronization to complete, and all bars to turn green.
+![Main: Wait for synchronization](images/03-wait-for-sync.png?raw=true "Main: Wait for synchronization")
+#. Export the Final Cut project file
+![Main: Export project](images/04-export-project.png?raw=true "Main: Export project")
+#. Import the project file into your video editor of choice
+![Vegas: Import project](images/05-import-project.png?raw=true "Vegas: Import project")
+#. Edit as usual
+![Vegas: Imported success](images/06-import-success.png?raw=true "Vegas: Imported success")
 
-## Screenshots
-![Main window: on-screen instruction](images/main-form-startup.png?raw=true "Main window: on-screen instruction")
+## Other synchronization options
+The options dialog offers three alternative synchronization options:
 
-![Main window: synchronization in progress](images/main-form.png?raw=true "Main window: synchronization in progress")
+## Soundfingerprinter
+Fast and reliable finger printing. Recommended.
+
+## Auxmic
+The original auxmic algorithm. Significantly slower than Soundfingerprinter, and not usually better, but will sometimes match when Soundfingerprinter will not.
+
+## Emy
+Even faster finger printer? I didn't test it much. Requires avutil-56.dll from ffmpeg to be installed. Maybe I need to update :-)
+
+
+## FAQ:
+
+**Q:** So why does ASS exist? 
+**A:** I use Magix Vegas Pro, and it's ability to provide this function is subpar. Also because I made this fork ages ago :-)
+
+**Q:** Is it fast?
+**A:** It's WAY fast. When synchronising 4 files over 30 minute period, Vegas Pro takes nearly 2 hours, and then crashes, ASS only takes a few seconds.
+
+**Q:** Why does it create Final Cut Pro 7 project files?
+**A:** Because they are the lingua franca of NLEs. Everything can import them.
+
+**Q:** Why didn't this just get merged back into auxmic?
+**A:** Because I refactored the hell out of it, and it became unmergable.
+
+
+
+![How it works: matching files](images/sync.png?raw=true "How it works: matching files")
+
