@@ -47,7 +47,7 @@
             if (video)
             {
                 exportArgs = 
-                    $"-y" +
+                    $"-y " +
                     $"-ss {queryStartInvariantCulture} -i \"{videoFilePath}\" " +
                     $"-ss {trackStartInvariantCulture} -i \"{audioFilePath}\" " +
                     $"-c copy -map 0:v:0 -map 1:a:0 -t {durationInvariantCulture} \"{targetFilePath}\"";
