@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:auxmic.ui.controls"
-        Title="auxmic" Height="350" Width="525" MinHeight="350" MinWidth="525" Loaded="Window_Loaded">
+        Title="auxmic" Height="450" Width="525" MinHeight="450" MinWidth="525" Loaded="Window_Loaded">
 
     <Window.Resources>
 
@@ -217,6 +217,8 @@
 
         <RoutedUICommand x:Key="SetMaster" Text="Set high quality audio source" />
         <RoutedUICommand x:Key="AddLQ" Text="Add media to synchronize" />
+        <RoutedUICommand x:Key="ExportFinalCutPro" Text="Export Project for FinalCutPro" />
+      
         <RoutedUICommand x:Key="OpenCacheFolder" Text="Open cache folder" />
         <RoutedUICommand x:Key="ClearCache" Text="Clear cache" />
         <RoutedUICommand x:Key="About" Text="About" />
@@ -228,6 +230,7 @@
         <CommandBinding Command="{StaticResource SetMaster}" Executed="cmd_AddMaster"></CommandBinding>
         <CommandBinding Command="{StaticResource AddLQ}" Executed="cmd_AddLQ"></CommandBinding>
         <CommandBinding Command="{StaticResource OpenCacheFolder}" Executed="cmd_OpenCacheFolder"></CommandBinding>
+        <CommandBinding Command="{StaticResource ExportFinalCutPro}" Executed="cmd_ExportFinalCutPro"></CommandBinding>
         <CommandBinding Command="{StaticResource ClearCache}" Executed="cmd_ClearCache"></CommandBinding>
         <CommandBinding Command="{StaticResource About}" Executed="cmd_About"></CommandBinding>
         <CommandBinding Command="{StaticResource Options}" Executed="cmd_Options"></CommandBinding>
@@ -236,9 +239,11 @@
     <Grid Style="{StaticResource main_window}">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition> <!-- Menu -->
+            <RowDefinition Height="Auto"></RowDefinition> <!-- Master Target -->
+            <RowDefinition Height="2*"></RowDefinition>    <!-- LQ targets -->
+            <RowDefinition Height="5"></RowDefinition>    <!-- Splitter --> 
+            <RowDefinition Height="1*"></RowDefinition> <!-- Logging -->
         </Grid.RowDefinitions>
 
         <Menu Grid.Row="0" Background="#585b5b" Foreground="#C6C8C8" BorderBrush="#596063" BorderThickness="0, 0, 0, 1" Margin="0, 0, 0, 5">
@@ -249,6 +254,8 @@
             <MenuItem Header="File">
                 <MenuItem Header="Set high quality audio source" Command="{StaticResource SetMaster}" Foreground="#596063"></MenuItem>
                 <MenuItem Header="Add media to synchronize" Command="{StaticResource AddLQ}" Foreground="#596063"></MenuItem>
+                <Separator />
+                <MenuItem Header="Export Project to FinalCut Pro 7" Command="{StaticResource ExportFinalCutPro}" Foreground="#596063"></MenuItem>
                 <Separator />
                 <MenuItem Header="Open cache folder" Command="{StaticResource OpenCacheFolder}" Foreground="#596063"></MenuItem>
                 <MenuItem Header="Clear cache" Command="{StaticResource ClearCache}" Foreground="#596063"></MenuItem>
@@ -273,17 +280,55 @@
             </ListBox>
         </Border>
 
-        <Border Style="{StaticResource border}" Grid.Row="2" AllowDrop="True" Drop="LQItems_Drop">
+        <Border Style="{StaticResource border}" Grid.Row="2" AllowDrop="True" Drop="LQItems_Drop" MinHeight="200">
             <ListBox 
                 Name="LQItems"
                 Style="{StaticResource lq_items}"
                 ItemTemplate="{StaticResource ClipItemTemplate}"
                 HorizontalContentAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalAlignment="Stretch"
                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                 ToolTip="Step 2: Drop media to synchronize here">
                 Step 2: Drop media to synchronize here or click to select
             </ListBox>
         </Border>
+       
+        <GridSplitter Grid.Row="3" Grid.ColumnSpan="1" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
 
+        <Border Style="{StaticResource border}" Grid.Row="4" MinHeight="80">
+            <ListView  
+                Name="Logging"   
+                Style="{StaticResource menu}"
+                HorizontalContentAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalAlignment="Stretch"
+                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                ToolTip="Logging">
+                    
+                <ListView.CommandBindings>
+                    <CommandBinding Command="ApplicationCommands.Copy"
+                                    Executed="CtrlCCopyCmdExecuted" />
+                </ListView.CommandBindings>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Path=.}"> 
+                            <TextBlock.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Command="Copy"> 
+                                        <MenuItem.CommandBindings> 
+                                            <CommandBinding Command="ApplicationCommands.Copy" 
+                                                            Executed="RightClickCopyCmdExecuted" /> 
+                                        </MenuItem.CommandBindings> 
+                                    </MenuItem> 
+                                </ContextMenu>
+                            </TextBlock.ContextMenu>
+                        </TextBlock>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                
+            </ListView>
+        </Border>
+        
     </Grid>
 </Window>

@@ -1,18 +1,72 @@
-﻿using Microsoft.Win32;
+﻿using System.Collections.ObjectModel;
 using System.Windows;
+using System;
+using System.Windows.Controls;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace auxmic.ui
 {
     /// <summary>
     /// Interaction logic for Options.xaml
     /// </summary>
+    ///
+    ///  TODO: Disallow changing of SYNCHRONIZER if the master clip has been set
     public partial class Options : Window
     {
+        private ObservableCollection<string>_synchronizers;
+
+        public ObservableCollection<string> Synchronizers
+        {
+            get => _synchronizers;
+            set => _synchronizers = value;
+        }
+    
+        public String Synchronizer
+        {
+            get { return Properties.Settings.Default.SYNCHRONIZER;  }
+            set { Properties.Settings.Default.SYNCHRONIZER = value; }
+        }
+
+       
+        public Boolean EnableWaveProviders
+        {
+            get {
+                return Properties.Settings.Default.SYNCHRONIZER == "AuxMic";
+            }
+        }
+
+        private ObservableCollection<string> _waveProviders;
+
+        public ObservableCollection<string> WaveProviders
+        {
+            get => _waveProviders;
+            set => _waveProviders = value;
+        }
+    
+        public String WaveProvider
+        {
+            get { return Properties.Settings.Default.WAVE_PROVIDER;  }
+            set { Properties.Settings.Default.WAVE_PROVIDER = value; }
+        }
         public Options()
         {
             InitializeComponent();
-        }
+            
+            _synchronizers = new ObservableCollection<string>();
+            _synchronizers.Add("AuxMic");
+            _synchronizers.Add("SoundFingerprinting");
+            _synchronizers.Add("Emy");
 
+            _waveProviders = new ObservableCollection<string>();
+            _waveProviders.Add("NAudio");
+            _waveProviders.Add("Pipe");
+            _waveProviders.Add("FFMpeg");
+
+            // var vov = new ObservableCollectionPropertyNotify<>()
+
+            DataContext = this;
+        }
+        
         /// <summary>
         /// Close window without saving the settings
         /// </summary>
@@ -21,7 +75,7 @@ namespace auxmic.ui
         private void btn_Cancel(object sender, RoutedEventArgs e)
         {
             Properties.Settings.Default.Reload();
-            this.Close();
+            DialogResult = false;
         }
 
         /// <summary>
@@ -32,7 +86,7 @@ namespace auxmic.ui
         private void btn_Save(object sender, RoutedEventArgs e)
         {
             Properties.Settings.Default.Save();
-            this.Close();
+            DialogResult = true;
         }
 
         /// <summary>
@@ -52,6 +106,11 @@ namespace auxmic.ui
                 // change settings but not save yet
                 Properties.Settings.Default.FFMPEG_EXE_PATH = openFileDialog.FileName;
             }
+        }
+
+        private void Synchronizer_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
     }
 }

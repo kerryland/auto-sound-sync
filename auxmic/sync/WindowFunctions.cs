@@ -18,7 +18,7 @@ namespace auxmic
             int N = data.Length;
 
             for (int n = 0; n < N; n++)
-                data[n] = new Complex(data[n].Real * (HAMMING_ALPHA - HAMMING_BETA * (float)Math.Cos((2 * Math.PI * n) / (N - 1))), 0);
+                data[n] = new Complex(data[n].Real * (HAMMING_ALPHA - HAMMING_BETA * Math.Cos((2 * Math.PI * n) / (N - 1))), 0);
         }
     }
 }

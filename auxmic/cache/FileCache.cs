@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Text;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
+using MsgPack.Serialization;
 using System.Security.Cryptography;
 
 namespace auxmic
@@ -84,6 +84,7 @@ namespace auxmic
             return File.Exists(Path.Combine(CacheRootPath, key));
         }
 
+
         /// <summary>
         /// Gets object by key. Key is a filename.
         /// Actually it reads file <paramref name="key"/> from CacheRootPath to object.
@@ -91,27 +92,22 @@ namespace auxmic
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        internal static object Get(string key)
+        internal static Int32[] Get(string key)
         {
-            object cached = null;
+            int[] cached = null;
 
             if (Contains(key))
             {
-                BinaryFormatter formatter = new BinaryFormatter();
-
                 using (FileStream fs = new FileStream(Path.Combine(CacheRootPath, key), FileMode.Open))
                 {
-                    cached = formatter.Deserialize(fs);
+	   	    var serializer = MessagePackSerializer.Get<Int32[]>();
+                    cached = serializer.Unpack(fs);
                 }
             }
 
             return cached;
         }
 
-        internal static T Get<T>(string key)
-        {
-            return (T)Get(key);
-        }
 
         /// <summary>
         /// Removes item from cache - deletes tmp-file if exists.
@@ -127,20 +123,31 @@ namespace auxmic
             }
         }
 
+	internal static void Set<T>(string key, T value)
+	{
+	    var formatter = MessagePackSerializer.Get<T>();
+            using (FileStream fs = File.Open(Path.Combine(CacheRootPath, key), FileMode.Create))
+            {
+                formatter.Pack(fs, value);
+            }
+	}
+
         /// <summary>
         /// Writes <paramref name="value"/> object to file with name <paramref name="key"/>
         /// in CacheRootPath directory.
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        internal static void Set(string key, object value)
+        internal static void Set_OLD(string key, object value)
         {
+            /*
             BinaryFormatter formatter = new BinaryFormatter();
 
             using (FileStream fs = File.Open(Path.Combine(CacheRootPath, key), FileMode.Create))
             {
                 formatter.Serialize(fs, value);
             }
+            */
         }
 
         internal object this[string key]

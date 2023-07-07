@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Threading.Tasks;
-using System.Linq;
 using System.IO;
+using auxmic.logging;
+using auxmic.sync;
 
 namespace auxmic
 {
     public sealed class ClipSynchronizer
     {
-        private SyncParams _syncParams;
-
+        private readonly AuxMicLog Log;
         public Clip Master { get; set; }
 
         public ObservableCollection<Clip> MasterClips { get; set; }
@@ -19,16 +20,16 @@ namespace auxmic
         private Task _processMasterTask;
 
         private TaskScheduler _taskScheduler = TaskScheduler.Current;
-
-        public ClipSynchronizer(SyncParams syncParams)
+        private ISoundFileFactory _soundFileFactory = new SoundFileFactory();
+        
+        public ClipSynchronizer(AuxMicLog log)
         {
-            _syncParams = syncParams;
-
+            Log = log;
             this.MasterClips = new ObservableCollection<Clip>();
             this.LQClips = new ObservableCollection<Clip>();
         }
 
-        public void SetMaster(string masterFilename)
+        public void SetMaster(string masterFilename, IFingerprinter fingerprinter)
         {
             if (Path.GetDirectoryName(masterFilename) == GetTempPath())
             {
@@ -42,7 +43,7 @@ namespace auxmic
                 this.MasterClips.Clear();
             }
 
-            this.Master = new Clip(masterFilename, _syncParams);
+            this.Master = new Clip(masterFilename, fingerprinter, Log, _soundFileFactory);
 
             // disable export button for high quality audio source
             this.Master.DisplayExportControls = false;
@@ -54,6 +55,10 @@ namespace auxmic
             if (_loadMasterTask != null)
             {
                 _loadMasterTask.Wait();
+                if (_loadMasterTask.Exception != null)
+                {
+                    Log.Log($"Failed to load master: {_loadMasterTask.Exception.Message}", _loadMasterTask.Exception);
+                }
             }
 
             // Используем две отдельных задачи, вместо цепочки задач.
@@ -62,8 +67,24 @@ namespace auxmic
             //    т.к. при загрузке LQ-файлов может потребоваться их ресемплинг до мастер-записи,
             //    а он ещё не загрузился и свойство WaveFormat не доступно (== null)
             // 2. перед матчингом LQ-записей надо дождаться окончания хэширования мастер-записи
+            
+            // We use two separate tasks instead of a chain of tasks. This is necessary in order to:
+            // 1. wait for the master record to load before loading the LQ files. when loading LQ files,
+            //    they may need to be resampled before the master record, but it has not been loaded yet
+            //    and the WaveFormat property is not available (== null)
+            // 2.before matching LQ records, you must wait until the master record has been hashed
             _loadMasterTask = Task.Factory.StartNew(
-                () => { Master.LoadFile(); },
+                () =>
+                {
+                    try
+                    {
+                        Master.LoadFile();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Log($"Failed to load master file: {e.Message}", e);
+                    }
+                },
                 this.Master.CancellationTokenSource.Token, 
                 TaskCreationOptions.None, 
                 _taskScheduler);
@@ -72,7 +93,17 @@ namespace auxmic
             // если формат не поддерживается, Media Foundation выкинет исключение 
             // MF_MEDIA_ENGINE_ERR_SRC_NOT_SUPPORTED 
             var cleanupTask = _loadMasterTask.ContinueWith(
-                (antecedent) => { CleanupMaster(); },
+                (antecedent) =>
+                {
+                    try
+                    {
+                        CleanupMaster();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Log($"Failed to cleanup master: {e.Message} ", e);
+                    }
+                },
                 /* отмену не учитываем */
                 System.Threading.CancellationToken.None,
                 /* выполняем только при ошибке */
@@ -82,7 +113,17 @@ namespace auxmic
                 TaskScheduler.FromCurrentSynchronizationContext());
 
             _processMasterTask = _loadMasterTask.ContinueWith(
-                (antecedent) => { Master.CalcHashes(); },
+                (antecedent) =>
+                {
+                    try
+                    {
+                        Master.CalcHashes();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Log($"{Master.DisplayName} fingerprinting failed", e);
+                    }
+                },
                 this.Master.CancellationTokenSource.Token,
                 TaskContinuationOptions.LongRunning,
                 _taskScheduler);
@@ -110,21 +151,41 @@ namespace auxmic
         {
             if (Path.GetDirectoryName(LQfilename) == GetTempPath())
             {
-                throw new ApplicationException(String.Format("Cannot add file '{0}' from auxmic temp folder. Please, use other folder for source files.", Path.GetFileName(LQfilename)));
+                throw new ApplicationException(
+                    $"Cannot add file '{Path.GetFileName(LQfilename)}' from auxmic temp folder. Please, use other folder for source files.");
             }
 
             // ждём загрузки мастер-записи, т.к. для ресемплинга нам нужно знать его WaveFormat
+            // waiting for the master record to load, because for resampling we need to know its WaveFormat
+            // TODO: Is this really true?
             _loadMasterTask.Wait();
+            if (_loadMasterTask.Exception != null)
+            {
+                throw new ApplicationException(
+                    $"Problem with {this.Master.DisplayName}: {_loadMasterTask.Exception.ToString()}",
+                    _loadMasterTask.Exception);
+            }
 
-            Clip clip = new Clip(LQfilename, this._syncParams, this.Master.WaveFormat);
-
-            // enable export button for clip
-            clip.DisplayExportControls = true;
+            Clip clip = new Clip(LQfilename, this.Master.Fingerprinter, Log, _soundFileFactory, this.Master.WaveFormat)
+            {
+                // enable export button for clip
+                DisplayExportControls = true
+            };
 
             this.LQClips.Add(clip);
 
             Task loadFileTask = Task.Factory.StartNew(
-                    () => { clip.LoadFile(); },
+                () =>
+                {
+                    try
+                    {
+                        clip.LoadFile();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Log($"{clip.DisplayName} failed to load", e);
+                    }
+                },
                     clip.CancellationTokenSource.Token,
                     TaskCreationOptions.None,
                     _taskScheduler);
@@ -141,7 +202,18 @@ namespace auxmic
                 TaskScheduler.FromCurrentSynchronizationContext());
 
             Task processTask = loadFileTask.ContinueWith(
-                    (antecedent) => { clip.CalcHashes(); },
+                    (antecedent) =>
+                    {
+                        try
+                        {
+                            clip.CalcHashes();
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Log($"{clip.DisplayName} fingerprinting... FAILED", e);
+                            
+                        }
+                    },
                     clip.CancellationTokenSource.Token,
                     TaskContinuationOptions.LongRunning,
                     _taskScheduler)
@@ -151,13 +223,28 @@ namespace auxmic
                         // ждём завершения хэширования мастер-записи
                         _processMasterTask.Wait();
 
+                        if (_processMasterTask.Exception != null)
+                        {
+                            throw new ApplicationException("Task failed", _processMasterTask.Exception);
+                        }
                         if (_processMasterTask.IsCanceled)
                         {
                             return;
                         }
 
                         // запускаем синхронизацию
-                        clip.Sync(this.Master);
+                        try
+                        {
+                            Log.Log($"{clip.DisplayName} synchronizing...");
+                            Stopwatch stopwatch = Stopwatch.StartNew();
+                            clip.Sync(this.Master);
+                            stopwatch.Stop();
+                            Log.Log($"{clip.DisplayName} synchronizing... Done in {stopwatch.Elapsed.TotalMilliseconds}");
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Log($"{clip.DisplayName} synchronizing... FAILED", e);
+                        }
                     },
                     clip.CancellationTokenSource.Token,
                     TaskContinuationOptions.LongRunning,
@@ -199,16 +286,6 @@ namespace auxmic
             }
 
             this.LQClips.Clear();
-        }
-
-        /// <summary>
-        /// Сохранение синхронизированного файла.
-        /// </summary>
-        /// <param name="clip"></param>
-        /// <param name="filename"></param>
-        public void Save(Clip clip, string filename)
-        {
-            this.Master.SaveMatch(filename, clip.StartIndex, clip.DataLength);
         }
 
         /// <summary>
