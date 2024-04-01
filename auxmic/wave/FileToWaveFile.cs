@@ -22,8 +22,8 @@ namespace auxmic.wave
                         ? waveFormat : reader.WaveFormat;
 
                     FFmpegTool.ExecuteFFmpeg(
-                        "-i " + filename + " -f wav -ac " + exportFormat.Channels +
-                        " -ar " + exportFormat.SampleRate + " " + tempFilename);
+                        "-i \"" + filename + "\" -f wav -ac " + exportFormat.Channels +
+                        " -ar " + exportFormat.SampleRate + " \"" + tempFilename + "\"");
                 }
             }
 
