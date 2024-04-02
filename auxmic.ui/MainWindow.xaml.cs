@@ -341,9 +341,7 @@ namespace auxmic.ui
         private string[] PickFiles()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            /* Supported Media Formats in Media Foundation
-             * http://msdn.microsoft.com/ru-ru/library/windows/desktop/dd757927(v=vs.85).aspx */
-            openFileDialog.Filter = "All media files|*.wav;*.mp3;*.3g2;*.3gp;*.3gp2;*.3gpp;*.aac;*.adts;*.avi;*.asf;*.wma;*.wmv;*.m4a;*.m4v;*.mov;*.mp4;*.m2ts;*.mts|All Files (*.*)|*.*";
+            openFileDialog.Filter = "All media files|*.wav;*.mp3;*.3g2;*.3gp;*.3gp2;*.3gpp;*.aac;*.adts;*.avi;*.asf;*.wma;*.wmv;*.m4a;*.m4v;*.mov;*.mp4;*.m2ts;*.mts;*.mpg|All Files (*.*)|*.*";
             openFileDialog.FilterIndex = 1;
             openFileDialog.Multiselect = true;
 
