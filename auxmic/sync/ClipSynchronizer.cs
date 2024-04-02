@@ -83,6 +83,7 @@ namespace auxmic
                     catch (Exception e)
                     {
                         Log.Log($"Failed to load master file: {e.Message}", e);
+                        throw e;
                     }
                 },
                 this.Master.CancellationTokenSource.Token, 
@@ -147,7 +148,7 @@ namespace auxmic
             _loadMasterTask = null;
         }
 
-        public void AddLQ(string LQfilename)
+        public async void AddLQ(string LQfilename)
         {
             if (Path.GetDirectoryName(LQfilename) == GetTempPath())
             {
@@ -173,87 +174,33 @@ namespace auxmic
             };
 
             this.LQClips.Add(clip);
+            
+            await Task.Run(() =>
+            {
+                    clip.LoadFile();
+                    clip.CalcHashes();
 
-            Task loadFileTask = Task.Factory.StartNew(
-                () =>
+                    Log.Log($"{clip.DisplayName} synchronizing...");
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    clip.Sync(this.Master);
+                    stopwatch.Stop();
+                    Log.Log($"{clip.DisplayName} synchronizing... Done in {stopwatch.Elapsed.TotalMilliseconds}");
+
+                return;
+            }).ContinueWith( t =>
                 {
-                    try
+                    if (t.IsFaulted)
                     {
-                        clip.LoadFile();
+                        if (t.Exception != null) {
+                            Log.Log($"{clip.DisplayName} failed process. " + t.Exception.Message, t.Exception);
+                        }
+                        Log.Log($"Removing evil clip: {clip.DisplayName}");
+
+                        this.LQClips.Remove(clip);
                     }
-                    catch (Exception e)
-                    {
-                        Log.Log($"{clip.DisplayName} failed to load", e);
-                    }
-                },
-                    clip.CancellationTokenSource.Token,
-                    TaskCreationOptions.None,
-                    _taskScheduler);
-
-            // если не удалось зугрузить файл - удаляем его из коллекции
-            var cleanupTask = loadFileTask.ContinueWith(
-                (antecedent) => { this.LQClips.Remove(clip); },
-                /* отмену не учитываем */
-                System.Threading.CancellationToken.None,
-                /* выполняем только при ошибке */
-                TaskContinuationOptions.OnlyOnFaulted,
-                /* т.к. обращаемся к коллекции LQClips созданной в потоке UI,
-                   то используем не _taskScheduler */
-                TaskScheduler.FromCurrentSynchronizationContext());
-
-            Task processTask = loadFileTask.ContinueWith(
-                    (antecedent) =>
-                    {
-                        try
-                        {
-                            clip.CalcHashes();
-                        }
-                        catch (Exception e)
-                        {
-                            Log.Log($"{clip.DisplayName} fingerprinting... FAILED", e);
-                            
-                        }
-                    },
-                    clip.CancellationTokenSource.Token,
-                    TaskContinuationOptions.LongRunning,
-                    _taskScheduler)
-                .ContinueWith(
-                    (antecedent) => 
-                    {
-                        // ждём завершения хэширования мастер-записи
-                        _processMasterTask.Wait();
-
-                        if (_processMasterTask.Exception != null)
-                        {
-                            throw new ApplicationException("Task failed", _processMasterTask.Exception);
-                        }
-                        if (_processMasterTask.IsCanceled)
-                        {
-                            return;
-                        }
-
-                        // запускаем синхронизацию
-                        try
-                        {
-                            Log.Log($"{clip.DisplayName} synchronizing...");
-                            Stopwatch stopwatch = Stopwatch.StartNew();
-                            clip.Sync(this.Master);
-                            stopwatch.Stop();
-                            Log.Log($"{clip.DisplayName} synchronizing... Done in {stopwatch.Elapsed.TotalMilliseconds}");
-                        }
-                        catch (Exception e)
-                        {
-                            Log.Log($"{clip.DisplayName} synchronizing... FAILED", e);
-                        }
-                    },
-                    clip.CancellationTokenSource.Token,
-                    TaskContinuationOptions.LongRunning,
-                    _taskScheduler);
-                //.ContinueWith(
-                //    (antecedent) => 
-                //    {
-                //        this.LQClips.OrderBy(c => c.Offset);
-                //    });
+                }, 
+                 TaskScheduler.FromCurrentSynchronizationContext());
+            
         }
 
         public void Cancel(Clip clip)
@@ -309,5 +256,9 @@ namespace auxmic
             FileCache.Clear();
             FileCache.Clear("wav");
         }
+    }
+
+    public class StateObject
+    {
     }
 }
