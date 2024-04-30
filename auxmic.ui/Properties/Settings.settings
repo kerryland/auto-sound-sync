@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="FFMPEG_EXE_PATH" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)">.\ffmpeg.exe</Value>
     </Setting>
     <Setting Name="SYNCHRONIZER" Type="System.String" Scope="User">
       <Value Profile="(Default)">SoundFingerprinting</Value>

@@ -44,5 +44,11 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
+  <ItemGroup>
+      <ContentWithTargetPath Include="ffmpeg\**">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <TargetPath>%(Filename)%(Extension)</TargetPath>
+      </ContentWithTargetPath> 
+    </ItemGroup>
   <PropertyGroup />
 </Project>
