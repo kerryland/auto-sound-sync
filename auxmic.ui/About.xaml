@@ -73,7 +73,7 @@
            <!--         <Image DockPanel.Dock="Left" Source="auxmic.ico" Height="32" Width="32" Margin="5" ></Image> -->
                     <TextBlock DockPanel.Dock="Top" FontWeight="Bold" Name="ProductName" Text="Auto Sound Sync" Padding="1" Margin="1, 1, 1, 1" />
                     <TextBlock DockPanel.Dock="Top" Text="auxmic Copyright © 2014-2020 Vladislav Osmanov" Padding="1" Margin="1, 1, 1, 1" />
-                    <TextBlock DockPanel.Dock="Top" Text="ASS enhancements 2021-2023 Kerry Sainsbury" Padding="1" Margin="1, 1, 1, 1" />
+                    <TextBlock DockPanel.Dock="Top" Text="ASS enhancements 2021-2024 Kerry Sainsbury" Padding="1" Margin="1, 1, 1, 1" />
            <!--     </DockPanel -->
                 <TextBlock DockPanel.Dock="Top" Padding="1" Margin="1">
                     <Hyperlink Foreground="#4ca1e4" NavigateUri="https://github.com/kerryland/auto-sound-sync" RequestNavigate="Hyperlink_RequestNavigate">
