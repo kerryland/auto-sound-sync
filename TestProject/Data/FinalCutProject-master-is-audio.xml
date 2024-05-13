@@ -22,7 +22,7 @@
                         <width>1280</width>
                         <height>720</height>
                         <anamorphic>FALSE</anamorphic>
-                        <pixelaspectratio>Square</pixelaspectratio>
+                        <pixelaspectratio>square</pixelaspectratio>
                         <fielddominance>none</fielddominance>
                         <rate>
                             <ntsc>FALSE</ntsc>
@@ -31,6 +31,60 @@
                         <colordepth>24</colordepth>
                     </samplecharacteristics>
                 </format>
+                <track>
+                    <clipitem id="master.wav_video">
+                        <name>master.wav</name>
+                        <duration>45000</duration>
+                        <rate>
+                            <ntsc>FALSE</ntsc>
+                            <timebase>25</timebase>
+                        </rate>
+                        <start>7500</start>
+                        <end>52500</end>
+                        <enabled>TRUE</enabled>
+                        <in>0</in>
+                        <out>45000</out>
+                        <file id="master.wav_file">
+                            <duration>45000</duration>
+                            <rate>
+                                <ntsc>FALSE</ntsc>
+                                <timebase>25</timebase>
+                            </rate>
+                            <name>master.wav</name>
+                            <pathurl>file://master.wav</pathurl>
+                            <timecode>
+                                <displayformat>NDF</displayformat>
+                                <rate>
+                                    <ntsc>FALSE</ntsc>
+                                    <timebase>25</timebase>
+                                </rate>
+                            </timecode>
+                            <media>
+                                <video>
+                                    <duration>45000</duration>
+                                    <samplecharacteristics>
+                                        <width>1280</width>
+                                        <height>720</height>
+                                        <anamorphic>FALSE</anamorphic>
+                                        <pixelaspectratio>square</pixelaspectratio>
+                                        <fielddominance>none</fielddominance>
+                                        <rate>
+                                            <ntsc>FALSE</ntsc>
+                                            <timebase>25</timebase>
+                                        </rate>
+                                        <colordepth>24</colordepth>
+                                    </samplecharacteristics>
+                                </video>
+                                <audio>
+                                    <channelcount>2</channelcount>
+                                </audio>
+                            </media>
+                        </file>
+                        <compositemode>normal</compositemode>
+                    </clipitem>
+                    <enabled>TRUE</enabled>
+                    <locked>FALSE</locked>
+                </track>
                 <track>
                     <clipitem id="clip01.mp4_video">
                         <name>clip01.mp4</name>
@@ -66,7 +120,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>
@@ -120,7 +174,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>
@@ -174,7 +228,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>
@@ -208,9 +262,7 @@
                         <enabled>TRUE</enabled>
                         <in>0</in>
                         <out>45000</out>
-                        <file id="master.wav_file">
-                            <pathurl>file://master.wav</pathurl>
-                        </file>
+                        <file id="master.wav_file" />
                         <sourcetrack>
                             <mediatype>audio</mediatype>
                             <trackindex>1</trackindex>
@@ -221,3 +273,4 @@
         </media>
     </sequence>
 </xmeml>
+

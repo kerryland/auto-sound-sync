@@ -19,14 +19,11 @@ namespace TestProject
     [TestClass()]
     public class SoundFileTest
     {
-
         string PathToFFmpegExe = "D:/apps/ffmpeg-4.4-full_build/bin/ffmpeg.exe";
 
         public SoundFileTest()
         {
-            FFmpegTool.PathToFFmpegExe = PathToFFmpegExe;
             FileToWaveFile.FFmpegTool = new FFmpegTool(new ConsoleLogger(), PathToFFmpegExe);
-
         }
 
 

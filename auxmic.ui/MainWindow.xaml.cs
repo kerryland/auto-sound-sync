@@ -24,6 +24,8 @@ namespace auxmic.ui
         private ClipSynchronizer _clipSynchronizer;
         private RollingLogFile _rollingLogFile;
         private FFmpegTool _ffmpegTool;
+        private IMediaExporter _mediaExporter;
+        private IMediaTool _mediaTool;
 
         public MainWindow()
         {
@@ -143,11 +145,16 @@ namespace auxmic.ui
             // TODO: Do some proper dependency injection
             _ffmpegTool = new FFmpegTool(this, Properties.Settings.Default.FFMPEG_EXE_PATH);
             
-            FFmpegTool.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
+            // Yuck...
             FileToWaveStream.PathToFFmpegExe = Properties.Settings.Default.FFMPEG_EXE_PATH;
             FileToWaveFile.FFmpegTool = _ffmpegTool;
             FileToWaveStream.Log = this;
             FingerprintStreamProvider.Log = this;
+            
+            _mediaExporter = new MediaExporter(_ffmpegTool);
+  
+            _mediaTool = new MediaTool(this, Properties.Settings.Default.FFMPEG_EXE_PATH.
+                Replace("ffmpeg.exe", "ffprobe.exe"));
 
             switch (Properties.Settings.Default.WAVE_PROVIDER)
             {
@@ -314,9 +321,7 @@ namespace auxmic.ui
             var duration = Math.Min(durationHQ, durationLQ);
 
             // export media
-            MediaExporter ffmpeg = new MediaExporter(_ffmpegTool);
-
-            ffmpeg.Export(
+            _mediaExporter.Export(
                 video,
                 clip.Filename,
                 _clipSynchronizer.Master.Filename,
@@ -402,10 +407,11 @@ namespace auxmic.ui
             string projectFilename = this._clipSynchronizer.Master.Filename + "_fcp7.xml";
             using StreamWriter sw = new StreamWriter(projectFilename);
             
-            FinalCutProExporter exporter = new FinalCutProExporter(new MediaTool());
+            FinalCutProExporter exporter = new FinalCutProExporter(_mediaTool);
             
             exporter.Export(this._clipSynchronizer.Master,
-                            this._clipSynchronizer.LQClips, sw);
+                            this._clipSynchronizer.LQClips, sw
+                            );
             
             Log("Final Cut Pro 7 Project file written to...");
             Log(projectFilename);

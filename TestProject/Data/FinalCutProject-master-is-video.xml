@@ -22,7 +22,7 @@
                         <width>1280</width>
                         <height>720</height>
                         <anamorphic>FALSE</anamorphic>
-                        <pixelaspectratio>Square</pixelaspectratio>
+                        <pixelaspectratio>square</pixelaspectratio>
                         <fielddominance>none</fielddominance>
                         <rate>
                             <ntsc>FALSE</ntsc>
@@ -66,7 +66,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>
@@ -120,7 +120,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>
@@ -174,7 +174,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>
@@ -228,7 +228,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>

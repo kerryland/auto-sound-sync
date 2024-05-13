@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Xml;
+using auxmic.mediaUtil;
 
 namespace auxmic.editorExport
 {
@@ -11,12 +12,11 @@ namespace auxmic.editorExport
     // This file cannot be imported into Adobe Premiere 2018. I can't tell you why not.
     public class FinalCutProExporter : IEditorExporter
     {
-        private static int timebase = 25;
-
         private double offsetAdjustmentMilliseconds;
         private double totalDurationSeconds;
         private IMediaTool _mediaTool;
-
+        private float timebase;
+        
         public FinalCutProExporter(IMediaTool mediaTool)
         {
             _mediaTool = mediaTool;
@@ -24,14 +24,30 @@ namespace auxmic.editorExport
 
         public void Export(Clip master, IList<Clip> clips, TextWriter output)
         {
-            bool masterIsVideo = _mediaTool.IsVideo(master.Filename);
+            timebase = 0;
+            MediaProperties masterMetadata = _mediaTool.LoadMetadata(master.Filename);
+            if (masterMetadata.IsVideo)
+            {
+                timebase = masterMetadata.FrameRate;
+            }
+            
+            Dictionary<string, MediaProperties> mediaPropertiesMap = new Dictionary<string, MediaProperties>();
+            foreach (var clip in clips)
+            {
+                var mediaProperties = _mediaTool.LoadMetadata(clip.Filename);
+                mediaPropertiesMap.Add(clip.Filename, mediaProperties);
+                if (timebase == 0 && mediaProperties.IsVideo)
+                {
+                    timebase = mediaProperties.FrameRate;
+                }
+            }
             
             var completeList = new List<Clip>();
             completeList.Add(master);
             completeList.AddRange(clips);
-            
+
             CalculateAdjustments(completeList);
-            
+
             XmlWriterSettings settings = new XmlWriterSettings
             {
                 Indent = true,
@@ -43,29 +59,38 @@ namespace auxmic.editorExport
             using XmlWriter writer = XmlWriter.Create(output, settings);
             writer.WriteStartElement("xmeml");
             writer.WriteAttributeString("version", "5");
-         
+
             WriteStartSequence(writer, master);
 
             writer.WriteStartElement("video");
-            WriteVideoFormat(writer);
-
-            if (masterIsVideo)
+            
+            bool videoFormatWritten = false;
+            if (masterMetadata.IsVideo)
             {
-                WriteVideoTrack(writer, master);
+                videoFormatWritten = true;
+                WriteVideoFormat(writer, masterMetadata);
+                WriteVideoTrack(writer, master, masterMetadata);
             }
-
+            
             foreach (var clip in clips)
             {
-                WriteVideoTrack(writer, clip);
+                var clipMetaData = mediaPropertiesMap.GetValueOrDefault(clip.Filename);
+                if (!videoFormatWritten && clipMetaData is {IsVideo: true})
+                {
+                    videoFormatWritten = true;
+                    WriteVideoFormat(writer, clipMetaData);
+                }
+                WriteVideoTrack(writer, clip, clipMetaData);
             }
+
             writer.WriteEndElement(); // video
 
             writer.WriteStartElement("audio");
-            WriteAudioTrack(writer, master, masterIsVideo);
+            WriteAudioTrack(writer, master, masterMetadata.IsVideo);
             writer.WriteEndElement(); // audio
-         
+
             WriteEndSequence(writer);
-                
+
             writer.WriteEndElement(); // xmeml
             writer.Flush();
         }
@@ -98,10 +123,10 @@ namespace auxmic.editorExport
             offsetAdjustmentMilliseconds = leftMost;
         }
 
-        private void WriteVideoFormat(XmlWriter videoWriter)
+        private void WriteVideoFormat(XmlWriter videoWriter, MediaProperties mediaProperties)
         {
             videoWriter.WriteStartElement("format");
-            WriteVideoSampleCharacteristics(videoWriter);
+            WriteVideoSampleCharacteristics(videoWriter, mediaProperties);
             videoWriter.WriteEndElement(); // format
         }
 
@@ -113,18 +138,18 @@ namespace auxmic.editorExport
             // Write the track duration
             var length = FinalCutDuration(clip);
             var offset = FinalCutOffset(clip.Offset.TotalMilliseconds);
-            WriteInOutStartOut(writer, 0, length, offset, 
+            WriteInOutStartOut(writer, 0, length, offset,
                 length + offset);
-            
+
             writer.WriteStartElement("file");
             writer.WriteAttributeString("id", clip.DisplayName + "_file");
             if (!masterIsVideo)
             {
                 writer.WriteElementString("pathurl", "file://" + clip.Filename.Replace("\\", "/"));
             }
-            
+
             writer.WriteEndElement(); // file
-            
+
             WriteSourceTrack(writer, "audio", "1");
 
             writer.WriteEndElement(); // clipitem
@@ -142,17 +167,18 @@ namespace auxmic.editorExport
             writer.WriteStartElement("sequence");
             writer.WriteElementString("name", "Sequence 1");
 
-            writer.WriteElementString("duration", (totalDurationSeconds * timebase).ToString(CultureInfo.InvariantCulture));
-            
+            writer.WriteElementString("duration",
+                (totalDurationSeconds * timebase).ToString(CultureInfo.InvariantCulture));
+
             WriteRate(writer);
             writer.WriteElementString("in", "-1");
             writer.WriteElementString("out", "-1");
 
             WriteTimecode(writer);
-            
+
             writer.WriteStartElement("media");
         }
-        
+
         private void WriteEndSequence(XmlWriter writer)
         {
             writer.WriteEndElement(); // media
@@ -160,7 +186,7 @@ namespace auxmic.editorExport
         }
 
 
-        private void WriteVideoTrack(XmlWriter writer, Clip clip)
+        private void WriteVideoTrack(XmlWriter writer, Clip clip, MediaProperties mediaProperties)
         {
             writer.WriteStartElement("track");
             writer.WriteStartElement("clipitem");
@@ -191,7 +217,7 @@ namespace auxmic.editorExport
             writer.WriteStartElement("media");
             writer.WriteStartElement("video");
             WriteDuration(writer, clip);
-            WriteVideoSampleCharacteristics(writer);
+            WriteVideoSampleCharacteristics(writer, mediaProperties);
             writer.WriteEndElement(); // video
 
             writer.WriteStartElement("audio");
@@ -209,18 +235,70 @@ namespace auxmic.editorExport
             writer.WriteEndElement(); // track
         }
 
-        private void WriteVideoSampleCharacteristics(XmlWriter writer)
+        private void WriteVideoSampleCharacteristics(XmlWriter writer, MediaProperties mediaProperties)
         {
+            DetermineAnamorphicAndPar(mediaProperties, out var anamorphic, out var finalCutPar);
+
             writer.WriteStartElement("samplecharacteristics");
-            writer.WriteElementString("width", "1280");  // Doesn't matter
-            writer.WriteElementString("height", "720");
-            writer.WriteElementString("anamorphic", "FALSE");
-            writer.WriteElementString("pixelaspectratio", "Square");
+            writer.WriteElementString("width", mediaProperties.Width.ToString());
+            writer.WriteElementString("height", mediaProperties.Height.ToString());
+            writer.WriteElementString("anamorphic", anamorphic);
+            writer.WriteElementString("pixelaspectratio", finalCutPar);
             writer.WriteElementString("fielddominance", "none");
             WriteRate(writer);
             writer.WriteElementString("colordepth", "24");
 
             writer.WriteEndElement(); // samplecharacteristics
+        }
+
+        private static void DetermineAnamorphicAndPar(MediaProperties mediaProperties, out string anamorphic,
+            out string finalCutPar)
+        { /*
+          40:33:            NTSC DV anamorphic widescreen
+          118:81:           PAL DV anamorphic widescreen
+
+          square, 1:1
+          NTSC-601, 10-:11 
+          PAL-601, 59:54
+          DVCPROHD-720P or HD-(960x720), 4:3
+          DVCPROHD-1080i60 or HD-(1280x1080),  1.5 == 3:2
+          DVCPROHD-1080i50 or HD-(1440x1080).  1.33 == 4:3
+         */
+            anamorphic = "FALSE";
+            finalCutPar = "square";
+            if (mediaProperties.Par == "10:11")
+            {
+                finalCutPar = "NTSC-601";
+            }
+            else if (mediaProperties.Par == "40:33")
+            {
+                finalCutPar = "NTSC-601";
+                anamorphic = "TRUE";
+            }
+            else if (mediaProperties.Par == "59:54")
+            {
+                finalCutPar = "PAL-601";
+            }
+            else if (mediaProperties.Par == "118:81")
+            {
+                finalCutPar = "PAL-601";
+                anamorphic = "TRUE";
+            }
+            else if (mediaProperties.Par == "4:3")
+            {
+                if (mediaProperties.Width == 960 && mediaProperties.Height == 720)
+                {
+                    finalCutPar = "HD-(960x720)";
+                }
+                else if (mediaProperties.Width == 1440 && mediaProperties.Height == 1080)
+                {
+                    finalCutPar = "HD-(1440x1080)";
+                }
+            }
+            else if (mediaProperties.Par == "3:2" && mediaProperties.Width == 1280 && mediaProperties.Height == 1080)
+            {
+                finalCutPar = "HD-(1280x1080)";
+            }
         }
 
         private void WriteTimecode(XmlWriter writer)
@@ -245,7 +323,7 @@ namespace auxmic.editorExport
             writer.WriteAttributeString("id", clip.DisplayName + idSuffix);
             writer.WriteElementString("name", clip.DisplayName);
             WriteDuration(writer, clip);
-        
+
             WriteRate(writer);
         }
 
@@ -255,10 +333,10 @@ namespace auxmic.editorExport
             writer.WriteElementString("duration", duration.ToString());
         }
 
-        private static long FinalCutDuration(Clip clip)
+        private long FinalCutDuration(Clip clip)
         {
-            long duration = clip.DataLength / clip.WaveFormat.SampleRate * timebase;
-            return duration;
+            float duration = (clip.DataLength / (float) clip.WaveFormat.SampleRate) * timebase;
+            return (long) duration;
         }
 
         private void WriteInOutStartOut(XmlWriter writer, long _in, long _out, long start, long end)
