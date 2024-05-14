@@ -130,30 +130,69 @@ namespace auxmic.editorExport
             videoWriter.WriteEndElement(); // format
         }
 
-        private void WriteAudioTrack(XmlWriter writer, Clip clip, bool masterIsVideo)
+        private void WriteAudioTrack(XmlWriter writer, Clip master, bool masterIsVideo)
         {
-            writer.WriteStartElement("track");
-            WriteMostOfClipItem(writer, clip, "_audio");
-
-            // Write the track duration
-            var length = FinalCutDuration(clip);
-            var offset = FinalCutOffset(clip.Offset.TotalMilliseconds);
-            WriteInOutStartOut(writer, 0, length, offset,
-                length + offset);
-
-            writer.WriteStartElement("file");
-            writer.WriteAttributeString("id", clip.DisplayName + "_file");
-            if (!masterIsVideo)
+            // Each channel should be its own track
+            for (int channel=1; channel <= master.WaveFormat.Channels; channel++)
             {
-                writer.WriteElementString("pathurl", "file://" + clip.Filename.Replace("\\", "/"));
+                WriteAudioChannel(channel);
             }
 
-            writer.WriteEndElement(); // file
+            void WriteAudioChannel(int channel)
+            {
+                writer.WriteStartElement("track");
+                writer.WriteStartElement("clipitem");
 
-            WriteSourceTrack(writer, "audio", "1");
+                WriteMostOfClipItem(writer, master, "audio", channel);
 
-            writer.WriteEndElement(); // clipitem
-            writer.WriteEndElement(); // track
+                // Write the track duration
+                var length = FinalCutDuration(master);
+                var offset = FinalCutOffset(master.Offset.TotalMilliseconds);
+                WriteInOutStartOut(writer, 0, length, offset,
+                    length + offset);
+
+                writer.WriteStartElement("file");
+                writer.WriteAttributeString("id", master.DisplayName + "_file");
+                if (!masterIsVideo)
+                {
+                    writer.WriteElementString("pathurl", "file://" + master.Filename.Replace("\\", "/"));
+                }
+
+                writer.WriteEndElement(); // file
+
+                WriteSourceTrack(writer, "audio", channel.ToString());
+
+                WriteLinks(writer, master, masterIsVideo);
+                
+                writer.WriteEndElement(); // clipitem
+                writer.WriteEndElement(); // track
+            }
+        }
+
+        private void WriteLinks(XmlWriter writer, Clip master, bool masterIsVideo)
+        {
+            void WriteLinkLinks(int trackindex, string mediatype, string clipref)
+            {
+                writer.WriteStartElement("link");
+                writer.WriteElementString("linkclipref", clipref);
+                writer.WriteElementString("mediatype", mediatype);
+                writer.WriteElementString("trackindex", trackindex.ToString());
+                writer.WriteElementString("clipindex", "1");
+                writer.WriteElementString("groupindex", "1");
+                writer.WriteEndElement(); // link
+            }
+
+            int startProjectTrack = 0;
+            if (masterIsVideo)
+            {
+                WriteLinkLinks(++startProjectTrack, "video", GenerateClipItemRef(master, "video", 0));
+            }
+
+            for (int otherchannel = 1; otherchannel <= master.WaveFormat.Channels; otherchannel++)
+            {
+                WriteLinkLinks(otherchannel + startProjectTrack, "audio",
+                    GenerateClipItemRef(master, "audio", otherchannel));
+            }
         }
 
         private int FinalCutOffset(double offsetMilliseconds)
@@ -185,13 +224,11 @@ namespace auxmic.editorExport
             writer.WriteEndElement(); // sequence
         }
 
-
         private void WriteVideoTrack(XmlWriter writer, Clip clip, MediaProperties mediaProperties)
         {
             writer.WriteStartElement("track");
             writer.WriteStartElement("clipitem");
-            writer.WriteAttributeString("id", clip.DisplayName + "_video");
-            writer.WriteElementString("name", clip.DisplayName);
+            WriteMostOfClipItem(writer, clip, "video", 0);
 
             var duration = FinalCutDuration(clip);
             var offset = FinalCutOffset(clip.Offset.TotalMilliseconds);
@@ -317,10 +354,16 @@ namespace auxmic.editorExport
             writer.WriteEndElement(); // sourcetrack
         }
 
-        private void WriteMostOfClipItem(XmlWriter writer, Clip clip, string idSuffix)
+        private string GenerateClipItemRef(Clip clip, string mediaType, int channel)
         {
-            writer.WriteStartElement("clipitem");
-            writer.WriteAttributeString("id", clip.DisplayName + idSuffix);
+            return clip.DisplayName + "_" + mediaType + " " + channel;
+        }
+        
+        private void WriteMostOfClipItem(XmlWriter writer, Clip clip, string mediatype, int channel)
+        {
+            writer.WriteAttributeString("id", GenerateClipItemRef(clip, mediatype, channel));
+            writer.WriteElementString("masterclipid", "master-clip-5"); // doesn't matter what?
+
             writer.WriteElementString("name", clip.DisplayName);
             WriteDuration(writer, clip);
 
