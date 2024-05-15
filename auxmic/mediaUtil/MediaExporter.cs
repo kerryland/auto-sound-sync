@@ -3,7 +3,7 @@
     /// <summary>
     /// Export media with audio from the master file
     /// </summary>
-    public class MediaExporter
+    public class MediaExporter : IMediaExporter
     {
         private FFmpegTool _launcher;
 
@@ -46,6 +46,10 @@
             string exportArgs;
             if (video)
             {
+                exportArgs =
+                    // TODO: Optionally just copy the original audio
+                    // $"-y -ss {trackStartInvariantCulture} -i \"{audioFilePath}\" -t {durationInvariantCulture} \"{targetFilePath}\"";
+
                 exportArgs = 
                     $"-y " +
                     $"-ss {queryStartInvariantCulture} -i \"{videoFilePath}\" " +

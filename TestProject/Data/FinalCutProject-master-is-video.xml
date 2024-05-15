@@ -22,7 +22,7 @@
                         <width>1280</width>
                         <height>720</height>
                         <anamorphic>FALSE</anamorphic>
-                        <pixelaspectratio>Square</pixelaspectratio>
+                        <pixelaspectratio>square</pixelaspectratio>
                         <fielddominance>none</fielddominance>
                         <rate>
                             <ntsc>FALSE</ntsc>
@@ -32,8 +32,14 @@
                     </samplecharacteristics>
                 </format>
                 <track>
-                    <clipitem id="master.mp4_video">
+                    <clipitem id="master.mp4_video 0">
+                        <masterclipid>master-clip-5</masterclipid>
                         <name>master.mp4</name>
+                        <duration>45000</duration>
+                        <rate>
+                            <ntsc>FALSE</ntsc>
+                            <timebase>25</timebase>
+                        </rate>
                         <duration>45000</duration>
                         <rate>
                             <ntsc>FALSE</ntsc>
@@ -66,7 +72,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>
@@ -86,8 +92,14 @@
                     <locked>FALSE</locked>
                 </track>
                 <track>
-                    <clipitem id="clip01.mp4_video">
+                    <clipitem id="clip01.mp4_video 0">
+                        <masterclipid>master-clip-5</masterclipid>
                         <name>clip01.mp4</name>
+                        <duration>15000</duration>
+                        <rate>
+                            <ntsc>FALSE</ntsc>
+                            <timebase>25</timebase>
+                        </rate>
                         <duration>15000</duration>
                         <rate>
                             <ntsc>FALSE</ntsc>
@@ -120,7 +132,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>
@@ -140,8 +152,14 @@
                     <locked>FALSE</locked>
                 </track>
                 <track>
-                    <clipitem id="clip02.mp4_video">
+                    <clipitem id="clip02.mp4_video 0">
+                        <masterclipid>master-clip-5</masterclipid>
                         <name>clip02.mp4</name>
+                        <duration>12000</duration>
+                        <rate>
+                            <ntsc>FALSE</ntsc>
+                            <timebase>25</timebase>
+                        </rate>
                         <duration>12000</duration>
                         <rate>
                             <ntsc>FALSE</ntsc>
@@ -174,7 +192,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>
@@ -194,8 +212,14 @@
                     <locked>FALSE</locked>
                 </track>
                 <track>
-                    <clipitem id="clip03.mp4_video">
+                    <clipitem id="clip03.mp4_video 0">
+                        <masterclipid>master-clip-5</masterclipid>
                         <name>clip03.mp4</name>
+                        <duration>21000</duration>
+                        <rate>
+                            <ntsc>FALSE</ntsc>
+                            <timebase>25</timebase>
+                        </rate>
                         <duration>21000</duration>
                         <rate>
                             <ntsc>FALSE</ntsc>
@@ -228,7 +252,7 @@
                                         <width>1280</width>
                                         <height>720</height>
                                         <anamorphic>FALSE</anamorphic>
-                                        <pixelaspectratio>Square</pixelaspectratio>
+                                        <pixelaspectratio>square</pixelaspectratio>
                                         <fielddominance>none</fielddominance>
                                         <rate>
                                             <ntsc>FALSE</ntsc>
@@ -250,7 +274,8 @@
             </video>
             <audio>
                 <track>
-                    <clipitem id="master.mp4_audio">
+                    <clipitem id="master.mp4_audio 1">
+                        <masterclipid>master-clip-5</masterclipid>
                         <name>master.mp4</name>
                         <duration>45000</duration>
                         <rate>
@@ -267,6 +292,69 @@
                             <mediatype>audio</mediatype>
                             <trackindex>1</trackindex>
                         </sourcetrack>
+                        <link>
+                            <linkclipref>master.mp4_video 0</linkclipref>
+                            <mediatype>video</mediatype>
+                            <trackindex>1</trackindex>
+                            <clipindex>1</clipindex>
+                            <groupindex>1</groupindex>
+                        </link>
+                        <link>
+                            <linkclipref>master.mp4_audio 1</linkclipref>
+                            <mediatype>audio</mediatype>
+                            <trackindex>2</trackindex>
+                            <clipindex>1</clipindex>
+                            <groupindex>1</groupindex>
+                        </link>
+                        <link>
+                            <linkclipref>master.mp4_audio 2</linkclipref>
+                            <mediatype>audio</mediatype>
+                            <trackindex>3</trackindex>
+                            <clipindex>1</clipindex>
+                            <groupindex>1</groupindex>
+                        </link>
+                    </clipitem>
+                </track>
+                <track>
+                    <clipitem id="master.mp4_audio 2">
+                        <masterclipid>master-clip-5</masterclipid>
+                        <name>master.mp4</name>
+                        <duration>45000</duration>
+                        <rate>
+                            <ntsc>FALSE</ntsc>
+                            <timebase>25</timebase>
+                        </rate>
+                        <start>7500</start>
+                        <end>52500</end>
+                        <enabled>TRUE</enabled>
+                        <in>0</in>
+                        <out>45000</out>
+                        <file id="master.mp4_file" />
+                        <sourcetrack>
+                            <mediatype>audio</mediatype>
+                            <trackindex>2</trackindex>
+                        </sourcetrack>
+                        <link>
+                            <linkclipref>master.mp4_video 0</linkclipref>
+                            <mediatype>video</mediatype>
+                            <trackindex>1</trackindex>
+                            <clipindex>1</clipindex>
+                            <groupindex>1</groupindex>
+                        </link>
+                        <link>
+                            <linkclipref>master.mp4_audio 1</linkclipref>
+                            <mediatype>audio</mediatype>
+                            <trackindex>2</trackindex>
+                            <clipindex>1</clipindex>
+                            <groupindex>1</groupindex>
+                        </link>
+                        <link>
+                            <linkclipref>master.mp4_audio 2</linkclipref>
+                            <mediatype>audio</mediatype>
+                            <trackindex>3</trackindex>
+                            <clipindex>1</clipindex>
+                            <groupindex>1</groupindex>
+                        </link>
                     </clipitem>
                 </track>
             </audio>

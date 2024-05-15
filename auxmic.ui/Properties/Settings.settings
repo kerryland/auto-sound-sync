@@ -11,6 +11,9 @@
     <Setting Name="WAVE_PROVIDER" Type="System.String" Scope="User">
       <Value Profile="(Default)">NAudio</Value>
     </Setting>
+    <Setting Name="EXPORT_SECONDARY_AUDIO" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
 

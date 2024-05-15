@@ -58,5 +58,17 @@ namespace auxmic.ui.Properties {
                 this["WAVE_PROVIDER"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool EXPORT_SECONDARY_AUDIO {
+            get {
+                return ((bool)(this["EXPORT_SECONDARY_AUDIO"]));
+            }
+            set {
+                this["EXPORT_SECONDARY_AUDIO"] = value;
+            }
+        }
     }
 }

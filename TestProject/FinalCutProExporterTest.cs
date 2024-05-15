@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml.Linq;
 using auxmic.editorExport;
+using auxmic.mediaUtil;
 using auxmic.sync;
 using NAudio.Wave;
 
@@ -117,12 +118,20 @@ namespace TestProject
 
             var writer = new StringWriter();
             IEditorExporter exporter = new FinalCutProExporter(new SimpleMediaTool(masterIsVideo));
-            exporter.Export(master, lqClips, writer);
+            // TODO: Another test with wantSecondaryAudio = true
+            exporter.Export(master, lqClips, false, writer);
 
             XDocument expectedXml = XDocument.Load(ClipTest.GetDataFolder() + expectedXmlFile);
             XDocument actualXml = XDocument.Load(new StringReader(writer.ToString()));
 
             var deepEquals = XNode.DeepEquals(expectedXml, actualXml);
+            if (!deepEquals)
+            {
+                log.Log("Expected:");
+                log.Log(expectedXml.ToString());
+                log.Log("Actual:");
+                log.Log(actualXml.ToString());
+            }
             Assert.IsTrue(deepEquals, "Expected XML not generated");
         }
     }
@@ -136,9 +145,9 @@ namespace TestProject
             _isVideo = isVideo;
         }
 
-        public bool IsVideo(string filename)
+        public MediaProperties LoadMetadata(string filename)
         {
-            return _isVideo;
+            return new MediaProperties(true, 1280, 720, "1:1", 25, 25);
         }
     }
 
