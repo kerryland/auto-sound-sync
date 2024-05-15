@@ -408,9 +408,12 @@ namespace auxmic.ui
             using StreamWriter sw = new StreamWriter(projectFilename);
             
             FinalCutProExporter exporter = new FinalCutProExporter(_mediaTool);
+            bool wantSecondaryAudio = false; // TODO: configuration parameter
             
             exporter.Export(this._clipSynchronizer.Master,
-                            this._clipSynchronizer.LQClips, sw
+                            this._clipSynchronizer.LQClips,
+                            wantSecondaryAudio,
+                            sw
                             );
             
             Log("Final Cut Pro 7 Project file written to...");

@@ -118,7 +118,8 @@ namespace TestProject
 
             var writer = new StringWriter();
             IEditorExporter exporter = new FinalCutProExporter(new SimpleMediaTool(masterIsVideo));
-            exporter.Export(master, lqClips, writer);
+            // TODO: Another test with wantSecondaryAudio = true
+            exporter.Export(master, lqClips, false, writer);
 
             XDocument expectedXml = XDocument.Load(ClipTest.GetDataFolder() + expectedXmlFile);
             XDocument actualXml = XDocument.Load(new StringReader(writer.ToString()));

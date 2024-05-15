@@ -6,6 +6,6 @@ namespace auxmic.editorExport
 {
     public interface IEditorExporter
     {
-        void Export(Clip master, IList<Clip> clips, TextWriter output);
+        void Export(Clip master, IList<Clip> clips, bool wantSecondaryAudio, TextWriter output);
     }
 }

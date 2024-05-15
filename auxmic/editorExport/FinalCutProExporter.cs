@@ -7,9 +7,7 @@ using auxmic.mediaUtil;
 
 namespace auxmic.editorExport
 {
-    // Create a "Final Cut Pro 7" project file that Davinci Resolve and Magix Vegas can load.
-    //  
-    // This file cannot be imported into Adobe Premiere 2018. I can't tell you why not.
+    // Create a "Final Cut Pro 7" project file that Davinci Resolve, Magix Vegas, and Adobe Premiere 2018 can load.
     public class FinalCutProExporter : IEditorExporter
     {
         private double offsetAdjustmentMilliseconds;
@@ -22,7 +20,7 @@ namespace auxmic.editorExport
             _mediaTool = mediaTool;
         }
 
-        public void Export(Clip master, IList<Clip> clips, TextWriter output)
+        public void Export(Clip master, IList<Clip> clips, bool wantSecondaryAudio, TextWriter output)
         {
             timebase = 0;
             MediaProperties masterMetadata = _mediaTool.LoadMetadata(master.Filename);
@@ -85,8 +83,19 @@ namespace auxmic.editorExport
 
             writer.WriteEndElement(); // video
 
+            // Here we are only writing the audio for the master track
             writer.WriteStartElement("audio");
             WriteAudioTrack(writer, master, masterMetadata.IsVideo);
+
+            if (wantSecondaryAudio)
+            {
+                foreach (var clip in clips)
+                {
+                    var clipMetaData = mediaPropertiesMap.GetValueOrDefault(clip.Filename);
+                    WriteAudioTrack(writer, clip, clipMetaData.IsVideo);
+                }
+            }
+
             writer.WriteEndElement(); // audio
 
             WriteEndSequence(writer);
@@ -130,10 +139,10 @@ namespace auxmic.editorExport
             videoWriter.WriteEndElement(); // format
         }
 
-        private void WriteAudioTrack(XmlWriter writer, Clip master, bool masterIsVideo)
+        private void WriteAudioTrack(XmlWriter writer, Clip clip, bool clipIsVideo)
         {
             // Each channel should be its own track
-            for (int channel=1; channel <= master.WaveFormat.Channels; channel++)
+            for (int channel=1; channel <= clip.WaveFormat.Channels; channel++)
             {
                 WriteAudioChannel(channel);
             }
@@ -143,26 +152,26 @@ namespace auxmic.editorExport
                 writer.WriteStartElement("track");
                 writer.WriteStartElement("clipitem");
 
-                WriteMostOfClipItem(writer, master, "audio", channel);
+                WriteMostOfClipItem(writer, clip, "audio", channel);
 
                 // Write the track duration
-                var length = FinalCutDuration(master);
-                var offset = FinalCutOffset(master.Offset.TotalMilliseconds);
+                var length = FinalCutDuration(clip);
+                var offset = FinalCutOffset(clip.Offset.TotalMilliseconds);
                 WriteInOutStartOut(writer, 0, length, offset,
                     length + offset);
 
                 writer.WriteStartElement("file");
-                writer.WriteAttributeString("id", master.DisplayName + "_file");
-                if (!masterIsVideo)
+                writer.WriteAttributeString("id", clip.DisplayName + "_file");
+                if (!clipIsVideo)
                 {
-                    writer.WriteElementString("pathurl", "file://" + master.Filename.Replace("\\", "/"));
+                    writer.WriteElementString("pathurl", "file://" + clip.Filename.Replace("\\", "/"));
                 }
 
                 writer.WriteEndElement(); // file
 
                 WriteSourceTrack(writer, "audio", channel.ToString());
 
-                WriteLinks(writer, master, masterIsVideo);
+                WriteLinks(writer, clip, clipIsVideo);
                 
                 writer.WriteEndElement(); // clipitem
                 writer.WriteEndElement(); // track
@@ -362,7 +371,7 @@ namespace auxmic.editorExport
         private void WriteMostOfClipItem(XmlWriter writer, Clip clip, string mediatype, int channel)
         {
             writer.WriteAttributeString("id", GenerateClipItemRef(clip, mediatype, channel));
-            writer.WriteElementString("masterclipid", "master-clip-5"); // doesn't matter what?
+            writer.WriteElementString("masterclipid", "master-clip-5"); // TODO: doesn't matter what?
 
             writer.WriteElementString("name", clip.DisplayName);
             WriteDuration(writer, clip);
