@@ -27,6 +27,12 @@ namespace auxmic.ui
             set { Properties.Settings.Default.SYNCHRONIZER = value; }
         }
 
+        public Boolean ExportSecondaryAudio
+        {
+            get { return Properties.Settings.Default.EXPORT_SECONDARY_AUDIO;  }
+            set { Properties.Settings.Default.EXPORT_SECONDARY_AUDIO = value; }
+        }
+
        
         public Boolean EnableWaveProviders
         {

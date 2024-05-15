@@ -85,7 +85,14 @@
                           ItemsSource="{Binding Path=Synchronizers}" 
                           Margin="5,0,5,0" >
                 </ComboBox>
+               
+                <TextBlock Grid.Row="2" Grid.Column="0" DockPanel.Dock="Top" Text="Export Secondary Audio" VerticalAlignment="Center" Padding="5,5,0,5" />
+
+                <CheckBox Grid.Row="2" Grid.Column="1" x:Name="exportSecondaryAudio" VerticalAlignment="Center" IsChecked="{Binding EXPORT_SECONDARY_AUDIO, Mode=TwoWay, Source={x:Static p:Settings.Default}}" Margin="5,5,0,5">
+                </CheckBox>
                 
+                <!-- Wave Provider stuff only applies to AuxMic Synchronizer, which is the slowest, and, from memory,
+                     one is clearly faster than the others. I assume it's whatever the default is :-) -->
                 <TextBlock Grid.Row="2" Grid.Column="0" x:Name="waveLabel" DockPanel.Dock="Top" 
                            Text="WAVE Provider (AuxMic Synchronizer)" VerticalAlignment="Center" Padding="5,5,0,5">
                     <TextBlock.Style>
@@ -99,7 +106,6 @@
                             </Style.Triggers>
                         </Style>
                     </TextBlock.Style>        
-                           
                 </TextBlock>
                 <ComboBox Grid.Row="2" Grid.Column="1" x:Name="waveProvider"
                           SelectedItem="{Binding Path=WaveProvider}"

@@ -408,11 +408,10 @@ namespace auxmic.ui
             using StreamWriter sw = new StreamWriter(projectFilename);
             
             FinalCutProExporter exporter = new FinalCutProExporter(_mediaTool);
-            bool wantSecondaryAudio = false; // TODO: configuration parameter
             
             exporter.Export(this._clipSynchronizer.Master,
                             this._clipSynchronizer.LQClips,
-                            wantSecondaryAudio,
+                            Properties.Settings.Default.EXPORT_SECONDARY_AUDIO,
                             sw
                             );
             
