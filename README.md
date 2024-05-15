@@ -37,17 +37,21 @@ ASS is a fork of the most excellent [auxmic](https://github.com/osmanovv/auxmic)
 ![Vegas: Imported success](images/06-import-success.png?raw=true "Vegas: Imported success")
 Notice how the subclips appear based on where their audio files match up.
 
-# Other synchronization options
+# Options
+## Synchronization options
 The options dialog offers three alternative synchronization options:
 
-## Soundfingerprinter
+### Soundfingerprinter
 Fast and reliable finger printing. Recommended.
 
-## Auxmic
+### Auxmic
 The original auxmic algorithm. Significantly slower than Soundfingerprinter, and not usually better, but will sometimes match when Soundfingerprinter will not.
 
-## Emy
+### Emy
 Even faster finger printer? It might work when others don't, depending on your audio.
+
+## Export Secondary Audio
+This setting causes the exported video project to include the original audio from the "synchronized", secondary tracks.
 
 # FAQ:
 
